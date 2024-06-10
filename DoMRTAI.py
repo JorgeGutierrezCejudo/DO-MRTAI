@@ -10,6 +10,7 @@ from Models import DynamicModel as dm
 import os
 import Cost as ct
 import Preprocessing as pp
+import PostProcessing as pop
 import matplotlib.pyplot as plt
 import math
 
@@ -19,22 +20,21 @@ import math
 
 
 #Initial data (open fleet)
-set_data = 5
-num_implements = 3
-num_tasks = 18
-num_vehicles = 3
-num_periods = 6
+# set_data = 5
+# num_implements = 10
+# num_tasks = 20
+# num_vehicles = 5
+# num_periods = 1
+# T=40
 
-
-dir=os.getcwd()
-os.chdir(dir)
-Implements,Tasks,Vehicles=dt.PositionData(num_implements,num_tasks,num_vehicles,set_data)
-
-
+# dir=os.getcwd()
+# os.chdir(dir)
+# Implements,Tasks,Vehicles=dt.PositionData(num_implements,num_tasks,num_vehicles,set_data)
 
 
 
-def init(Implements,Tasks,Vehicles):
+def init(Implements,Tasks,Vehicles,T,num_periods):
+    t=0
     Obj=0
     Event=True
     XAsignments={}
@@ -50,17 +50,14 @@ def init(Implements,Tasks,Vehicles):
     Tmin=0
     num_vehicles = len(Vehicles)
     full=True
+    dir=os.getcwd()
 
 
 
-    while(len(Tasks)>0):
+    while((len(Tasks)>0) and (t<T)):
         if Event==True :
-            #Update the number of Implements, Tasks and Vehicle
-            if num_periods<=1:
-                Implements,Tasks,Vehicles,M,That=pp.UpdateInfoST(XAsignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,T_max)
-
-            else:
-                Implements,Tasks,Vehicles,M,That=pp.UpdateInfoTE(XAsignments,Implements,Tasks,Vehicles,M,That,num_periods,ZAsignments,b,T_max,TAsignments,num_vehicles)
+            Event=False
+            #Update the number of Implements, Tasks and Vehicles
             num_implements = len(Implements)
             num_tasks = len(Tasks)
             num_vehicles = len(Vehicles)
@@ -102,14 +99,13 @@ def init(Implements,Tasks,Vehicles):
             os.chdir(dir)
             #modelo.write("model"+str(i)+".lp")
             all_vars = modelo.getVars()
+            tprime=modelo.getAttr("Runtime")
             values = modelo.getAttr("X", all_vars)
             names = modelo.getAttr("VarName", all_vars)
             XAsignments = {name: val for name,val in zip(names, values) if ((val>0) and ((name.startswith('x'))))}
             ZAsignments = {name: val for name,val in zip(names, values) if ((val>0) and ((name.startswith('z'))))}
             if num_periods>1:
                 TAsignments= {name: val for name,val in zip(names, values) if ((val>0) and ((name.startswith('T'))))}
-            print(ZAsignments)
-            print(XAsignments)
 
 
             #Visualization
@@ -118,19 +114,31 @@ def init(Implements,Tasks,Vehicles):
             # else:
             #     tew.init(num_implements,num_tasks,num_vehicles,Implements,Tasks,Vehicles,XAsignments,M,num_periods,ZAsignments,TAsignments)
             os.chdir(dir)
-
-            #Posprocessing
-
-            
+            t=t+tprime
+        
 
         if num_periods<=1:
-            Event,XAsignments,ZAsignments,Vehicules,Implements,Tasks,Obj1=mv.animate_allocation(Implements, Tasks, Vehicles, XAsignments)
+            Event,Vehicles,Implements,Tasks,AssignmentT,tmo=mv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments)
         else:
-            Event=temv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments)
+            Event,Implements,Tasks,Vehicles=temv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments)
 
-    plt.show()
+        #Postprocessing:
+        t=t+(tmo)
+        if Event==True:     
+            XAsignments=pop.AssignmentDone(AssignmentT)
+            if num_periods<=1:
+                Implements,Tasks,Vehicles,M,That=pp.UpdateInfoST(XAsignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,T_max)
+            else:
+                Implements,Tasks,Vehicles,M,That=pp.UpdateInfoTE(XAsignments,Implements,Tasks,Vehicles,M,That,num_periods,ZAsignments,b,T_max,TAsignments,num_vehicles)
+        print("****************************************************")
+        print(t)
+        print("****************************************************")
+
+
+
+        
     print("El valor objetivo final es de:",Obj)
 
 
 
-init(Implements,Tasks,Vehicles)
+# init(Implements,Tasks,Vehicles,T)

@@ -15,6 +15,7 @@ def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime
     #Set model time limit
     timeLimit = 100
     model.setParam('TimeLimit', timeLimit)
+    model.setParam('OutputFlag', 0)
     #model.setParam('MIPGap', 0)
     # ------------------------------------ Decision Variables definitions 
     #Decision variables

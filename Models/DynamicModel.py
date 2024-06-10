@@ -13,6 +13,7 @@ def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,T_max,b,
     #Set model time limit
     timeLimit = 1000
     model.setParam('TimeLimit', timeLimit)
+    model.setParam('OutputFlag', 0)
 
     #Decision variables
     x = {(i,k,v,t):model.addVar(vtype=GRB.BINARY, name="x_" + str(i) + "_" + str(k) + "_" + str(v)+ "_" + str(t)) 

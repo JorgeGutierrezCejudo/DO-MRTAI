@@ -169,3 +169,5 @@ def animate_allocation(Implements, Tasks, Vehicles, Asignments, Zasigments, num_
 
     ani = animation.FuncAnimation(fig, animate, frames=num_steps, interval=100)
     plt.show()
+
+    return Event
