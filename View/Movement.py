@@ -4,6 +4,9 @@ import matplotlib.animation as animation
 import math
 from Tools import Defactorise as tl
 import time
+import matplotlib
+
+matplotlib.use('GTK3Agg')
 
 def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles):
     Event = False
