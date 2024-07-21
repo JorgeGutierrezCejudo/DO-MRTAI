@@ -5,10 +5,10 @@ def UpdateInfoST(Asignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,Tmax)
     A_implements,A_tasks,A_vehicles =tl.XAsignmentsDefactorise(Asignments)
     A_vehiclesd =tl.ZAsignmentsDefactorise(ZAsignments)
 
-    for i in range(len(A_vehiclesd)):
-        That[A_vehiclesd[i]]=Tmax[A_vehiclesd[i]]
-        Vehicles[A_vehiclesd[i],1]=0
-        Vehicles[A_vehiclesd[i],0]=0
+    # for i in range(len(A_vehiclesd)):
+    #     That[A_vehiclesd[i]]=Tmax[A_vehiclesd[i]]
+    #     Vehicles[A_vehiclesd[i],1]=0
+    #     Vehicles[A_vehiclesd[i],0]=0
 
 #Update the position of the Implements,Tasks and Vehicles
     # for i in range(len(A_tasks)):

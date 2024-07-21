@@ -6,8 +6,8 @@ import Data
 import DoMRTAI as dm
 
 # Directorio y balance de costos y energía
-CostBalance = [1, 0.01]
-EnergyBalance = [1, 0.2]
+CostBalance = [1, 0.01]  # [Costo de estatico, Costo de dinamico]
+EnergyBalance = [1, 0.2]# [Energia de estatico, Energia de dinamico]
 
 # Archivo de configuración
 config_file = "config.json"
@@ -38,7 +38,7 @@ def save_config():
         "num_implements": num_implements_entry.get(),
         "num_tasks": num_tasks_entry.get(),
         "num_vehicles": num_vehicles_entry.get(),
-        "dataset": dataset_entry.get(),
+        "seed": dataset_entry.get(),
         "full": full_var.get(),
         "time_horizon": time.get(),
         "num_periods": periods.get()
@@ -53,6 +53,7 @@ def load_config():
     return {}
 
 def run_optimization():
+    
     num_implements = int(num_implements_entry.get())
     num_tasks = int(num_tasks_entry.get())
     num_vehicles = int(num_vehicles_entry.get())
@@ -97,10 +98,10 @@ num_vehicles_entry = ttk.Entry(root)
 num_vehicles_entry.grid(row=2, column=1, padx=10, pady=5)
 num_vehicles_entry.insert(0, config.get("num_vehicles", ""))
 
-ttk.Label(root, text="Dataset:").grid(row=3, column=0, padx=10, pady=5)
+ttk.Label(root, text="Seed:").grid(row=3, column=0, padx=10, pady=5)
 dataset_entry = ttk.Entry(root)
 dataset_entry.grid(row=3, column=1, padx=10, pady=5)
-dataset_entry.insert(0, config.get("dataset", ""))
+dataset_entry.insert(0, config.get("seed", ""))
 
 full_var = tk.BooleanVar()
 full_checkbox = ttk.Checkbutton(root, text="Full", variable=full_var)

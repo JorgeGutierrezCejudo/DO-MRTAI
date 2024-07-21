@@ -5,8 +5,9 @@ from View import StView as vw
 from View import TEView as tew
 from View import Movement as mv
 from View import TEMovement as temv
-from Models import StaticModel as sm
+from Models import StaticModel_NOGUROBY as sm
 from Models import DynamicModel as dm
+from pyscipopt import Model as Modelo
 import os
 import Cost as ct
 import Preprocessing as pp
@@ -49,7 +50,7 @@ def init(Implements,Tasks,Vehicles,T,num_periods):
     EnergyBalance = [1,1]
     Tmin=0
     num_vehicles = len(Vehicles)
-    full=True
+    full=True #Compatibilidad : true compatibiladad todos con todos
     dir=os.getcwd()
 
 
@@ -98,14 +99,32 @@ def init(Implements,Tasks,Vehicles,T,num_periods):
             
             os.chdir(dir)
             #modelo.write("model"+str(i)+".lp")
-            all_vars = modelo.getVars()
-            tprime=modelo.getAttr("Runtime")
-            values = modelo.getAttr("X", all_vars)
-            names = modelo.getAttr("VarName", all_vars)
-            XAsignments = {name: val for name,val in zip(names, values) if ((val>0) and ((name.startswith('x'))))}
-            ZAsignments = {name: val for name,val in zip(names, values) if ((val>0) and ((name.startswith('z'))))}
-            if num_periods>1:
-                TAsignments= {name: val for name,val in zip(names, values) if ((val>0) and ((name.startswith('T'))))}
+            try: 
+                all_vars = modelo.getVars()
+                tprime=modelo.getAttr("Runtime")
+                values = modelo.getAttr("X", all_vars)
+                names = modelo.getAttr("VarName", all_vars)
+                XAsignments = {name: val for name,val in zip(names, values) if ((val>0) and ((name.startswith('x'))))}
+                ZAsignments = {name: val for name,val in zip(names, values) if ((val>0) and ((name.startswith('z'))))}
+                if num_periods>1:
+                    TAsignments= {name: val for name,val in zip(names, values) if ((val>0) and ((name.startswith('T'))))}
+            except: 
+                XAsignments={}
+                ZAsignments={}
+                tprime=modelo.getSolvingTime()
+                solution = modelo.getBestSol()
+                all_vars = modelo.getVars()
+                # Recorrer todas las variables y filtrar por las que tienen valores mayores a 0 y empiezan con 'x' o 'z'
+                for var in all_vars:
+                    val = modelo.getSolVal(solution, var)
+                    name = var.name
+                    if val > 0:
+                        if name.startswith('x'):
+                            XAsignments[name] = val
+                        elif name.startswith('z'):
+                            ZAsignments[name] = val
+                    
+
 
 
             #Visualization
