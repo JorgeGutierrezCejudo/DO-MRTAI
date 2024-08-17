@@ -1,7 +1,17 @@
- 
 
-def TrueObj ():
-    pass
+def TrueObj (Distancia,TaskNotDonne,t,M):
+    obj=0
+    CostPenalty=0
+    M=TaskNotDonne[:,3]
+    for i in range(len(TaskNotDonne)):
+        CostPenalty=M[i]*t/100+CostPenalty
+    print("CostPenalty",CostPenalty)
+
+    for i in range(len(Distancia)):
+        obj+=Distancia[i]
+    obj+=CostPenalty
+    return obj
+
 
 def AssignmentDone (AssignmentT):
     try:

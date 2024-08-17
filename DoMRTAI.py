@@ -7,6 +7,7 @@ from View import Movement as mv
 from View import TEMovement as temv
 from Models import StaticModel_NOGUROBY as sm
 from Models import DynamicModel as dm
+from Models import StaticModel as smG
 from pyscipopt import Model as Modelo
 import os
 import Cost as ct
@@ -34,7 +35,7 @@ import math
 
 
 
-def init(Implements,Tasks,Vehicles,T,num_periods):
+def init(Implements,Tasks,Vehicles,T,num_periods,probability):
     t=0
     Obj=0
     Event=True
@@ -44,11 +45,13 @@ def init(Implements,Tasks,Vehicles,T,num_periods):
     M=Tasks[:,3]
     That=Vehicles[:,4]
     b=0
+    TotalDistancia = np.ones((len(Vehicles)),dtype=float)
+    Distancia=np.ones((len(Vehicles)),dtype=float)
     T_max=Vehicles[:,3]
     CostBalance = [1,1]
     alpha,beta=0.5,0.5
     EnergyBalance = [1,1]
-    Tmin=0
+    Tmin=20
     num_vehicles = len(Vehicles)
     full=True #Compatibilidad : true compatibiladad todos con todos
     dir=os.getcwd()
@@ -57,6 +60,7 @@ def init(Implements,Tasks,Vehicles,T,num_periods):
 
     while((len(Tasks)>0) and (t<T)):
         if Event==True :
+            Obj_prime=0
             Event=False
             #Update the number of Implements, Tasks and Vehicles
             num_implements = len(Implements)
@@ -93,7 +97,7 @@ def init(Implements,Tasks,Vehicles,T,num_periods):
 
             #Optimization model
             if num_periods<=1:
-                modelo=sm.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime,Tmin)
+                modelo=smG.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime,Tmin)
             else:
                 modelo=dm.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,T_max,b,Tau,Vhat,Ihat,Khat,Cprime,Tmin)
             
@@ -137,25 +141,36 @@ def init(Implements,Tasks,Vehicles,T,num_periods):
         
 
         if num_periods<=1:
-            Event,Vehicles,Implements,Tasks,AssignmentT,tmo=mv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments)
+            Event,Vehicles,Implements,Tasks,AssignmentT,tmo,Distancia=mv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probability)
         else:
-            Event,Implements,Tasks,Vehicles=temv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments)
+            Event,Implements,Tasks,Vehicles=temv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probability)
+        
 
         #Postprocessing:
         t=t+(tmo)
         if Event==True:     
+            print("Asignacion real",AssignmentT)
             XAsignments=pop.AssignmentDone(AssignmentT)
             if num_periods<=1:
-                Implements,Tasks,Vehicles,M,That=pp.UpdateInfoST(XAsignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,T_max)
+                Implements,Tasks,Vehicles,M,That=pp.UpdateInfoST(XAsignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,T_max,Distancia)
             else:
                 Implements,Tasks,Vehicles,M,That=pp.UpdateInfoTE(XAsignments,Implements,Tasks,Vehicles,M,That,num_periods,ZAsignments,b,T_max,TAsignments,num_vehicles)
         print("****************************************************")
-        print(t)
+        print("Baterias de los vehiculos",That)
         print("****************************************************")
+        print("****************************************************")
+        print("Tiempo trascurrido:",t)
+        print("****************************************************")
+    
+        Obj_prime=pop.TrueObj(Distancia,Tasks,t,M)
+        Obj+=Obj_prime
+        print("****************************************************")
+        print("The objective value of this iteration is:",Obj_prime)
+        print("****************************************************")
+        print("The total objetive value is:",Obj)
+        print("****************************************************")
+    
 
-
-
-        
     print("El valor objetivo final es de:",Obj)
 
 

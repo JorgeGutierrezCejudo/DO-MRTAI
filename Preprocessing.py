@@ -1,7 +1,7 @@
 import numpy as np
 import Tools.Defactorise as tl
 
-def UpdateInfoST(Asignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,Tmax):
+def UpdateInfoST(Asignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,Tmax,Distancia):
     A_implements,A_tasks,A_vehicles =tl.XAsignmentsDefactorise(Asignments)
     A_vehiclesd =tl.ZAsignmentsDefactorise(ZAsignments)
 
@@ -15,7 +15,7 @@ def UpdateInfoST(Asignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,Tmax)
     #     Implements[A_implements[i],1]=Tasks[A_tasks[i],1]
     #     Vehicles[A_vehicles[i],1]=Tasks[A_tasks[i],1]
     #     Implements[A_implements[i],0]=Tasks[A_tasks[i],0]
-    #     Vehicles[A_vehicles[i],0]=Tasks[A_tasks[i],0]
+    #     Vehicles[A_vehicles[i],0]=Tasks[A_tasks[i],0
     # for v in range(len(A_tasks)):
     #     That[A_vehicles[v]]=That[A_vehicles[v]]-b[A_implements[v],A_tasks[v],A_vehicles[v]]
 
@@ -24,6 +24,16 @@ def UpdateInfoST(Asignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,Tmax)
         Tasks=np.delete(Tasks,A_tasks[i],axis=0)
         M=np.delete(M,A_tasks[i])
 
+    for i in range (len(Vehicles)):
+        That[i] -= Distancia[i]*0.05
+        if That[i]<0:
+            That[i]=0
+
+    for i in range(len(A_vehiclesd)):
+        That[A_vehiclesd[i]]=Tmax[A_vehiclesd[i]]
+
+
+    
     return Implements,Tasks,Vehicles,M,That
 
 def UpdateInfoTE(Asignments,Implements,Tasks,Vehicles,M,That,num_periods,ZAsignments,b,Tmax,TAsignments,num_vehicles):

@@ -7,7 +7,7 @@ import DoMRTAI as dm
 
 # Directorio y balance de costos y energía
 CostBalance = [1, 0.01]  # [Costo de estatico, Costo de dinamico]
-EnergyBalance = [1, 0.2]# [Energia de estatico, Energia de dinamico]
+EnergyBalance = [1, 0.2] # [Energia de estatico, Energia de dinamico]
 
 # Archivo de configuración
 config_file = "config.json"
@@ -41,7 +41,8 @@ def save_config():
         "seed": dataset_entry.get(),
         "full": full_var.get(),
         "time_horizon": time.get(),
-        "num_periods": periods.get()
+        "num_periods": periods.get(),
+        "probability_new_task": probability_entry.get()  # Añadir aquí
     }
     with open(config_file, 'w') as f:
         json.dump(config, f)
@@ -61,6 +62,7 @@ def run_optimization():
     full = full_var.get()
     T = int(time.get())
     num_periods = int(periods.get())
+    probability_new_task = float(probability_entry.get())  
 
     save_config()
 
@@ -72,7 +74,7 @@ def run_optimization():
     os.chdir(dir)
     Implements, Tasks, Vehicles = Data.PositionData(num_implements, num_tasks, num_vehicles, set_data)
     os.chdir(dir)
-    dm.init(Implements, Tasks, Vehicles, T, num_periods)
+    dm.init(Implements, Tasks, Vehicles, T, num_periods, probability_new_task)  
 
 dir = directory()
 os.chdir(dir)
@@ -118,6 +120,12 @@ periods = ttk.Entry(root)
 periods.grid(row=6, column=1, padx=10, pady=5)
 periods.insert(0, config.get("num_periods", ""))
 
-ttk.Button(root, text="Run Optimization", command=run_optimization).grid(row=8, column=0, columnspan=2, pady=10)
+# Añadir el nuevo cuadro de entrada para la probabilidad de nueva tarea
+ttk.Label(root, text="Probability of New Task:").grid(row=7, column=0, padx=10, pady=5)
+probability_entry = ttk.Entry(root)
+probability_entry.grid(row=7, column=1, padx=10, pady=5)
+probability_entry.insert(0, config.get("probability_new_task", ""))
+
+ttk.Button(root, text="Run Optimization", command=run_optimization).grid(row=9, column=0, columnspan=2, pady=10)
 
 root.mainloop()

@@ -48,7 +48,7 @@ def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime
         model.addConstr(z[v] + quicksum(x[i, k, v] for i in IV[v] for k in KV[v]) == 1)
     #Constraints 8: vehicle autonomy constraints (could be preprocessed)
     for v in V:
-        model.addConstr(quicksum((b[i][k][v]) * x[i, k, v] for i in I for k in K) <= That[v]-Tmin)
+        model.addConstr(quicksum((b[i][k][v]) * x[i, k, v] for i in I for k in K) <= abs(That[v]-Tmin))
 
 
     #Solving
