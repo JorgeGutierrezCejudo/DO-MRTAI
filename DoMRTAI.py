@@ -15,9 +15,9 @@ import Preprocessing as pp
 import PostProcessing as pop
 import matplotlib.pyplot as plt
 import math
-
-
-
+from Events import EventLogger as EVlogger
+from Events import Events as EV
+from tabulate import tabulate
 
 
 
@@ -35,10 +35,14 @@ import math
 
 
 
-def init(Implements,Tasks,Vehicles,T,num_periods,probability):
+def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA):
+    InfoTaskDone=[]
     t=0
     Obj=0
-    Event=True
+    CostPenaltyRest=0
+    DoneAsignationCost=0
+    CostDistance= 0
+    Event=[True,"",0]
     XAsignments={}
     ZAsignments={}
     TAsignments={}
@@ -59,9 +63,9 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probability):
 
 
     while((len(Tasks)>0) and (t<T)):
-        if Event==True :
+        if Event[0]:
             Obj_prime=0
-            Event=False
+            Event[0]= False
             #Update the number of Implements, Tasks and Vehicles
             num_implements = len(Implements)
             num_tasks = len(Tasks)
@@ -141,34 +145,64 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probability):
         
 
         if num_periods<=1:
-            Event,Vehicles,Implements,Tasks,AssignmentT,tmo,Distancia=mv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probability)
+            Event,Vehicles,Implements,Tasks,AssignmentT,tmo,Distancia=mv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA)
         else:
-            Event,Implements,Tasks,Vehicles=temv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probability)
+            Event,Implements,Tasks,Vehicles=temv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA)
         
 
         #Postprocessing:
         t=t+(tmo)
-        if Event==True:     
-            print("Asignacion real",AssignmentT)
-            XAsignments=pop.AssignmentDone(AssignmentT)
+        if Event[0]:  
+            if Event[1]=="Task":
+                TaskEvent = EV.TaskEvent("New Task", Event[2],1)
+                print(TaskEvent)
+                NTasks = TaskEvent.process()
+                Tasks=np.concatenate((Tasks,NTasks),axis=0) 
+            elif Event[1]== "Vehicle" :
+                VehicleEvent = EV.VehicleEvent("New Vehicle", Event[1],1)
+                NVehicles = VehicleEvent.process()
+            elif Event[1]=="Implement":
+                ImplementEvent = EV.ImplementEvent("New Implement", Event[1],1)
+                NImplements = ImplementEvent.process()
+            elif Event[1]=="Simulation":
+                SimulationEvent = EV.SimulationEvent("Simulation Event", Event[2]) 
+                print(SimulationEvent)
+                SimulationEvent.process()
+            else:
+                print("Error: EVENT NOT FOUND")
+
+            XAsignments,InfoTaskDone=pop.AssignmentDone(AssignmentT,t,InfoTaskDone,M)
             if num_periods<=1:
                 Implements,Tasks,Vehicles,M,That=pp.UpdateInfoST(XAsignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,T_max,Distancia)
             else:
                 Implements,Tasks,Vehicles,M,That=pp.UpdateInfoTE(XAsignments,Implements,Tasks,Vehicles,M,That,num_periods,ZAsignments,b,T_max,TAsignments,num_vehicles)
-        print("****************************************************")
-        print("Baterias de los vehiculos",That)
-        print("****************************************************")
-        print("****************************************************")
-        print("Tiempo trascurrido:",t)
-        print("****************************************************")
-    
-        Obj_prime=pop.TrueObj(Distancia,Tasks,t,M)
+            
+        Obj=Obj-CostPenaltyRest-DoneAsignationCost
+
+        CostPenaltyRest,DoneAsignationCost,CostDistance_prime=pop.TrueObj(Distancia,Tasks,t,M,InfoTaskDone)
+
+
+
+        Obj_prime=CostPenaltyRest+CostDistance_prime+DoneAsignationCost
         Obj+=Obj_prime
-        print("****************************************************")
-        print("The objective value of this iteration is:",Obj_prime)
-        print("****************************************************")
-        print("The total objetive value is:",Obj)
-        print("****************************************************")
+
+        That_list = [[f"Battery of vehicule {i+1}", int(That[i])] for i in range(num_vehicles)]
+        Distancia_list = [[f"Distance of vehicule {i+1}", int(Distancia[i])] for i in range(num_vehicles)]
+        summary_data = [
+            *That_list,
+            *Distancia_list,
+            ["Elapsed time", t],
+            ["Cost of penalty of task do not finish", CostPenaltyRest],
+            ["Cost of task done", DoneAsignationCost],
+            ["Cost of distance", CostDistance_prime],
+            ["Total objective value (this iteration)", Obj_prime],
+            ["Total objective value", Obj]
+        ]
+
+        print(tabulate(summary_data, headers=["Description", "Value"], tablefmt="rst"))
+
+    
+
     
 
     print("El valor objetivo final es de:",Obj)

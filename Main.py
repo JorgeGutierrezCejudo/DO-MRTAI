@@ -6,8 +6,8 @@ import Data
 import DoMRTAI as dm
 
 # Directorio y balance de costos y energía
-CostBalance = [1, 0.01]  # [Costo de estatico, Costo de dinamico]
-EnergyBalance = [1, 0.2] # [Energia de estatico, Energia de dinamico]
+CostBalance = [1, 0.01]  # [Costo de estático, Costo de dinámico]
+EnergyBalance = [1, 0.2] # [Energía de estático, Energía de dinámico]
 
 # Archivo de configuración
 config_file = "config.json"
@@ -42,7 +42,12 @@ def save_config():
         "full": full_var.get(),
         "time_horizon": time.get(),
         "num_periods": periods.get(),
-        "probability_new_task": probability_entry.get()  # Añadir aquí
+        "probabilityTA": probabilityTA_entry.get(),
+        "probabilityTD": probabilityTD_entry.get(),
+        "probabilityVA": probabilityVA_entry.get(),
+        "probabilityVD": probabilityVD_entry.get(),
+        "probabilityIA": probabilityIA_entry.get(),
+        "probabilityID": probabilityID_entry.get()
     }
     with open(config_file, 'w') as f:
         json.dump(config, f)
@@ -62,7 +67,12 @@ def run_optimization():
     full = full_var.get()
     T = int(time.get())
     num_periods = int(periods.get())
-    probability_new_task = float(probability_entry.get())  
+    probabilityTA = float(probabilityTA_entry.get())
+    probabilityTD = float(probabilityTD_entry.get())
+    probabilityVA = float(probabilityVA_entry.get())
+    probabilityVD = float(probabilityVD_entry.get())
+    probabilityIA = float(probabilityIA_entry.get())
+    probabilityID = float(probabilityID_entry.get())
 
     save_config()
 
@@ -74,7 +84,10 @@ def run_optimization():
     os.chdir(dir)
     Implements, Tasks, Vehicles = Data.PositionData(num_implements, num_tasks, num_vehicles, set_data)
     os.chdir(dir)
-    dm.init(Implements, Tasks, Vehicles, T, num_periods, probability_new_task)  
+    
+    # Pasa las nuevas probabilidades como parámetros adicionales si es necesario
+    dm.init(Implements, Tasks, Vehicles, T, num_periods, 
+            probabilityTA, probabilityTD, probabilityVA, probabilityVD, probabilityIA, probabilityID)  
 
 dir = directory()
 os.chdir(dir)
@@ -120,12 +133,37 @@ periods = ttk.Entry(root)
 periods.grid(row=6, column=1, padx=10, pady=5)
 periods.insert(0, config.get("num_periods", ""))
 
-# Añadir el nuevo cuadro de entrada para la probabilidad de nueva tarea
-ttk.Label(root, text="Probability of New Task:").grid(row=7, column=0, padx=10, pady=5)
-probability_entry = ttk.Entry(root)
-probability_entry.grid(row=7, column=1, padx=10, pady=5)
-probability_entry.insert(0, config.get("probability_new_task", ""))
+# Añadir nuevos cuadros de entrada para las probabilidades de aparición y desaparición de tareas, vehículos e implementos
+ttk.Label(root, text="Probability of Task Appearance (TA):").grid(row=7, column=0, padx=10, pady=5)
+probabilityTA_entry = ttk.Entry(root)
+probabilityTA_entry.grid(row=7, column=1, padx=10, pady=5)
+probabilityTA_entry.insert(0, config.get("probabilityTA", ""))
 
-ttk.Button(root, text="Run Optimization", command=run_optimization).grid(row=9, column=0, columnspan=2, pady=10)
+ttk.Label(root, text="Probability of Task Disappearance (TD):").grid(row=8, column=0, padx=10, pady=5)
+probabilityTD_entry = ttk.Entry(root)
+probabilityTD_entry.grid(row=8, column=1, padx=10, pady=5)
+probabilityTD_entry.insert(0, config.get("probabilityTD", ""))
+
+ttk.Label(root, text="Probability of Vehicle Appearance (VA):").grid(row=9, column=0, padx=10, pady=5)
+probabilityVA_entry = ttk.Entry(root)
+probabilityVA_entry.grid(row=9, column=1, padx=10, pady=5)
+probabilityVA_entry.insert(0, config.get("probabilityVA", ""))
+
+ttk.Label(root, text="Probability of Vehicle Disappearance (VD):").grid(row=10, column=0, padx=10, pady=5)
+probabilityVD_entry = ttk.Entry(root)
+probabilityVD_entry.grid(row=10, column=1, padx=10, pady=5)
+probabilityVD_entry.insert(0, config.get("probabilityVD", ""))
+
+ttk.Label(root, text="Probability of Implement Appearance (IA):").grid(row=11, column=0, padx=10, pady=5)
+probabilityIA_entry = ttk.Entry(root)
+probabilityIA_entry.grid(row=11, column=1, padx=10, pady=5)
+probabilityIA_entry.insert(0, config.get("probabilityIA", ""))
+
+ttk.Label(root, text="Probability of Implement Disappearance (ID):").grid(row=12, column=0, padx=10, pady=5)
+probabilityID_entry = ttk.Entry(root)
+probabilityID_entry.grid(row=12, column=1, padx=10, pady=5)
+probabilityID_entry.insert(0, config.get("probabilityID", ""))
+
+ttk.Button(root, text="Run Optimization", command=run_optimization).grid(row=13, column=0, columnspan=2, pady=10)
 
 root.mainloop()

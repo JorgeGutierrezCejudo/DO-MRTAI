@@ -6,11 +6,13 @@ import random
 from Tools import Defactorise as tl
 import time
 import matplotlib
+from Events import EventLogger as EVlogger
+from Events import Events as EV
 
 #matplotlib.use('GTK3Agg')
 
-def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles,Distancia,probability):
-    Event = False
+def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles,Distancia,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA):
+    Event = [False, "", 0]
     New_task = []
     A_implements, A_tasks, A_vehicles = tl.XAsignmentsDefactorise(Asignments)
     num_vehicles = len(A_vehicles)
@@ -57,7 +59,7 @@ def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl,
                 Vehicles[A_vehicles[i], 1] = Tasks[A_tasks[i], 1]
                 Implements[A_implements[i], 0] = Tasks[A_tasks[i], 0]
                 Implements[A_implements[i], 1] = Tasks[A_tasks[i], 1]
-                Event = True
+                Event = [True, "Simulation", 1]
                 reached_info.append((A_implements[i], A_tasks[i], A_vehicles[i]))  # Almacenar la información del vehículo, implemento y tarea alcanzados
     for i in range(num_vehiclesd):
         # Move vehicle back to depot
@@ -73,15 +75,28 @@ def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl,
         if np.linalg.norm([dx, dy]) < Vl[i]:
             Vehicles[Z_vehicles[i], 0] = 1
             Vehicles[Z_vehicles[i], 1] = 1
-            #Event = True
+            #Event = [True, "Simulation", 2]
 
     #Check if a new task appear
-    if random.random() < probability:
-        New_task=NewTasks(1)
-        print(New_task)
-        Event=True
-
-
+    if random.random() < probabilityTA:
+        Event=[True,"Task",1]
+    #Check if a task Disappear
+    elif random.random() < probabilityTD:
+        Event=[True,"Task",2]
+    #Check if a new vehicle Appear
+    elif random.random() < probabilityVA:
+        Event=[True,"Vehicle",1]
+    #Check if a vehicle Disappear
+    elif random.random() < probabilityVD:
+        Event=[True,"Vehicle",2]
+    #Check if a new implement Appear
+    elif random.random() < probabilityIA:
+        Event=[True,"Implement",1]
+    #Check if a implement Disappear
+    elif random.random() < probabilityID:
+        Event=[True,"Implement",2]
+    
+    
 
     return Event, Vehicles, Implements, reached_info, New_task,Distancia
 
@@ -102,9 +117,9 @@ def init_plot(ax, Implements, Tasks, Vehicles):
     ax.set_xlim(-1, 100)
     ax.set_ylim(-1, 100)
 
-def update_plot(ax, Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles,Distancia,probability):
+def update_plot(ax, Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles,Distancia,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA):
     ax.clear()
-    Event, updated_vehicles, updated_implements, reached_info,New_task,Distancia= update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles,Distancia,probability)
+    Event, updated_vehicles, updated_implements, reached_info,New_task,Distancia= update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles,Distancia,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA)
     init_plot(ax, updated_implements, Tasks, updated_vehicles)
 
     
@@ -134,7 +149,7 @@ def update_plot(ax, Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, 
     ax.set_title(f"Vehicle Movements - Step Fraction {step_fraction:.2f}")
     return Event, updated_vehicles, updated_implements, reached_info,New_task
 
-def animate_allocation(Implements, Tasks, Vehicles, Asignments, ZAsignments,probability,num_steps=100):
+def animate_allocation(Implements, Tasks, Vehicles, Asignments, ZAsignments,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA,num_steps=100):
     start_time = time.time()  # Registrar el tiempo de inicio
     fig, ax = plt.subplots(figsize=(10, 6))
     reached_implements = np.full(len(Vehicles), False)
@@ -149,11 +164,12 @@ def animate_allocation(Implements, Tasks, Vehicles, Asignments, ZAsignments,prob
         nonlocal execution_time,Tasks  # Para modificar las variables en el ámbito externo
         global Event,New_task
         step_fraction = i / num_steps
-        Event, updated_vehicles, updated_implements, reached_info, New_task = update_plot(ax, Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles,Distancia,probability)
+        Event, updated_vehicles, updated_implements, reached_info, New_task = update_plot(ax, Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles,Distancia,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA)
         reached_info_all.extend(reached_info)  # Agregar la información de los vehículos que han llegado en este paso
-        if Event :
-            if len(New_task) > 0:
-                Tasks=np.concatenate((Tasks,New_task),axis=0)
+        if Event[0]:
+            print("***************************************************************************************************************")
+            print("                                 EVENT TRIGERED-SIMULATION STOPPED         ")
+            print("***************************************************************************************************************")
             event_occurred = True
             end_time = time.time()  # Registrar el tiempo de finalización
             execution_time = end_time - start_time  # Calcular el tiempo de ejecución
