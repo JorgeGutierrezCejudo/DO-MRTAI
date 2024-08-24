@@ -18,8 +18,8 @@ def DynamicCalculation(num_implements,num_tasks,num_vehicles,Implements,Tasks,Ve
                 Xdiv=abs(xImplement[i]-xVehicle[v])
                 Ydiv=abs(yImplement[i]-yVehicle[v])
                 Distance1=sqrt(Xdiv**2+Ydiv**2)
-                Xdik=abs(xTask[k]-xImplement[v])
-                Ydik=abs(yTask[k]-yImplement[v])
+                Xdik=abs(xTask[k]-xImplement[i])
+                Ydik=abs(yTask[k]-yImplement[i])
                 Distance2=sqrt(Xdik**2+Ydik**2)
                 Bd[i,k,v]=0.2*((Distance1+Distance2))
                 Cd[i,k,v]=0.5*Distance1+0.5*Distance2

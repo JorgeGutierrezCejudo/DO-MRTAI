@@ -7,6 +7,7 @@ import os
 def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime,Tmin):
     #Model definition
     model = Modelo('3index-assignment-3')
+    model.setParam("display/verblevel", 0)
 
     Cmax = np.random.randint(0,1,size=len(V))
     for i in V:

@@ -33,13 +33,46 @@ class TaskEvent(Event):
 
 
 class VehicleEvent(Event):
-    def __init__(self, description, vehicle_id, vehicle_data, **kwargs):
+    def __init__(self, description, vehicle_id, vehicle_data,num,data, **kwargs):
         super().__init__("Vehicle", description, **kwargs)
         self.vehicle_id = vehicle_id
         self.vehicle_data = vehicle_data  
+        self.num=num
+        self.data=data
 
     def process(self):
-        return print("New Vehicle")
+        Vehicles=self.vehicle_data
+        if self.vehicle_id == 2:
+                self.description="VEHICLE BROKE"
+                print (
+                    "***************************************************************************************************************\n"
+                    f"                   {self.description} - RE-CALCULATION THE ROUTES\n"
+                    "***************************************************************************************************************"
+                )
+    
+
+            
+        elif self.vehicle_id==1:
+                self.description="NEW VEHICLE"
+                print (
+                    "***************************************************************************************************************\n"
+                    f"                   {self.description}  - RE-CALCULATION THE ROUTES\n"
+                    "***************************************************************************************************************"
+                )
+                self.data=np.random.randint(1,100)
+                np.random.seed(self.data+20)
+                Vehicle = np.random.randint(0, 100, size=(self.num,2))
+                EfVehicle=  np.random.randint(80, 100, size=(self.num,1))
+                Vehicle = np.concatenate((Vehicle,EfVehicle/100),axis=1)
+                np.random.seed(self.data+1)  
+                T_max = np.random.randint(100,101, size=(self.num)) 
+                Vehicle = np.concatenate((Vehicle,T_max.reshape(-1,1)),axis=1)
+                np.random.seed(self.data)  
+                That = [np.random.randint(0.75*T_max[i], T_max[i]) for i in range(self.num)]
+                That = np.array(That)
+                Vehicle = np.concatenate((Vehicle,That.reshape(-1,1)),axis=1)
+                Vehicles = np.concatenate((Vehicles, Vehicle), axis=0)
+        return Vehicles
     
 class ImplementEvent(Event):
     def __init__(self, description,Implement_id,Implemet_data, **kwargs):

@@ -37,6 +37,7 @@ from tabulate import tabulate
 
 def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA):
     InfoTaskDone=[]
+    data=1
     t=0
     Obj=0
     CostPenaltyRest=0
@@ -66,6 +67,7 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
         if Event[0]:
             Obj_prime=0
             Event[0]= False
+            print(Vehicles)
             #Update the number of Implements, Tasks and Vehicles
             num_implements = len(Implements)
             num_tasks = len(Tasks)
@@ -101,7 +103,7 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
 
             #Optimization model
             if num_periods<=1:
-                modelo=smG.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime,Tmin)
+                modelo=sm.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime,Tmin)
             else:
                 modelo=dm.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,T_max,b,Tau,Vhat,Ihat,Khat,Cprime,Tmin)
             
@@ -153,24 +155,6 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
         #Postprocessing:
         t=t+(tmo)
         if Event[0]:  
-            if Event[1]=="Task":
-                TaskEvent = EV.TaskEvent("New Task", Event[2],1)
-                print(TaskEvent)
-                NTasks = TaskEvent.process()
-                Tasks=np.concatenate((Tasks,NTasks),axis=0) 
-            elif Event[1]== "Vehicle" :
-                VehicleEvent = EV.VehicleEvent("New Vehicle", Event[1],1)
-                NVehicles = VehicleEvent.process()
-            elif Event[1]=="Implement":
-                ImplementEvent = EV.ImplementEvent("New Implement", Event[1],1)
-                NImplements = ImplementEvent.process()
-            elif Event[1]=="Simulation":
-                SimulationEvent = EV.SimulationEvent("Simulation Event", Event[2]) 
-                print(SimulationEvent)
-                SimulationEvent.process()
-            else:
-                print("Error: EVENT NOT FOUND")
-
             XAsignments,InfoTaskDone=pop.AssignmentDone(AssignmentT,t,InfoTaskDone,M)
             if num_periods<=1:
                 Implements,Tasks,Vehicles,M,That=pp.UpdateInfoST(XAsignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,T_max,Distancia)
@@ -180,6 +164,25 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
         Obj=Obj-CostPenaltyRest-DoneAsignationCost
 
         CostPenaltyRest,DoneAsignationCost,CostDistance_prime=pop.TrueObj(Distancia,Tasks,t,M,InfoTaskDone)
+
+        if Event[0]:  
+            if Event[1]=="Task":
+                TaskEvent = EV.TaskEvent("Task event", Event[2],1)
+                NTasks = TaskEvent.process()
+                Tasks=np.concatenate((Tasks,NTasks),axis=0) 
+            elif Event[1]== "Vehicle" :
+                VehicleEvent = EV.VehicleEvent("New Vehicle", Event[2],Vehicles,1,data)
+                Vehicles = VehicleEvent.process()
+                print(Vehicles)
+            elif Event[1]=="Implement":
+                ImplementEvent = EV.ImplementEvent("New Implement", Event[1],1)
+                NImplements = ImplementEvent.process()
+            elif Event[1]=="Simulation":
+                SimulationEvent = EV.SimulationEvent("Simulation Event", Event[2]) 
+                print(SimulationEvent)
+                SimulationEvent.process()
+            else:
+                print("Error: EVENT NOT FOUND")
 
 
 

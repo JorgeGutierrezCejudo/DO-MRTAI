@@ -9,7 +9,7 @@ import matplotlib
 from Events import EventLogger as EVlogger
 from Events import Events as EV
 
-#matplotlib.use('GTK3Agg')
+matplotlib.use('GTK3Agg')
 
 def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles,Distancia,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA):
     Event = [False, "", 0]

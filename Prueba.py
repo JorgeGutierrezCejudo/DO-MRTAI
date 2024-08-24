@@ -1,24 +1,27 @@
-InfoTaskDone = []  # Inicializa una lista vacía para almacenar las tareas completadas
+import numpy as np
 
-# Suponiendo que 'M[AssignmentT[0][1]]' es el valor de la penalización y 't' es el tiempo
-task_info = {
-    "PenaltyValue": 2,
-    "Time": 2
-}
+data = 1
+num = 1
+Vehicles = np.array([[56.26390165, 28.34456164, 0.89, 10, 73.99516129],
+                     [89.79634926, 43.70288105, 0.95, 100, 82.174375],
+                     [66.2856118, 18.50791373, 0.84, 100, 83.93181818]])
 
-# Añadir el diccionario de la tarea completada a la lista
-InfoTaskDone.append(task_info)
+# Generación del nuevo vehículo
+np.random.seed(data + 20)
+Vehicle = np.random.randint(0, 100, size=(num, 2))
+EfVehicle = np.random.randint(80, 100, size=(num, 1)) / 100
+Vehicle = np.concatenate((Vehicle, EfVehicle), axis=1)
 
+np.random.seed(data + 1)
+T_max = np.random.randint(100, 101, size=(num, 1))
+Vehicle = np.concatenate((Vehicle, T_max), axis=1)
 
-task_info = {
-    "PenaltyValue": 3,
-    "Time": 2
-}
+np.random.seed(data)
+That = [np.random.randint(int(0.75 * T_max[i]), T_max[i]) for i in range(num)]
+That = np.array(That).reshape(num, 1)
+Vehicle = np.concatenate((Vehicle, That), axis=1)
 
-InfoTaskDone.append(task_info)
+# Concatenar el nuevo vehículo a la lista de vehículos existente
+Vehicles = np.concatenate((Vehicles, Vehicle), axis=0)
 
-
-
-
-penalty_values = [task["Time"] for task in InfoTaskDone]
-print("Penalty values:", penalty_values)
+print(Vehicles)

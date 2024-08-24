@@ -32,8 +32,6 @@ def UpdateInfoST(Asignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,Tmax,
     for i in range(len(A_vehiclesd)):
         That[A_vehiclesd[i]]=Tmax[A_vehiclesd[i]]
 
-
-    
     return Implements,Tasks,Vehicles,M,That
 
 def UpdateInfoTE(Asignments,Implements,Tasks,Vehicles,M,That,num_periods,ZAsignments,b,Tmax,TAsignments,num_vehicles):
