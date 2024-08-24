@@ -67,7 +67,6 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
         if Event[0]:
             Obj_prime=0
             Event[0]= False
-            print(Vehicles)
             #Update the number of Implements, Tasks and Vehicles
             num_implements = len(Implements)
             num_tasks = len(Tasks)
@@ -178,9 +177,15 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
                 ImplementEvent = EV.ImplementEvent("New Implement", Event[1],1)
                 NImplements = ImplementEvent.process()
             elif Event[1]=="Simulation":
-                SimulationEvent = EV.SimulationEvent("Simulation Event", Event[2]) 
-                print(SimulationEvent)
-                SimulationEvent.process()
+                if Event[2]==2:
+                    SimulationData = [ZAsignments,That,T_max]
+                else:
+                    SimulationData = []
+                SimulationEvent = EV.SimulationEvent("Simulation Event", Event[2],SimulationData) 
+                SimulationOutput=SimulationEvent.process()
+                if Event[2]==2:
+                    That=SimulationOutput[0]
+                    T_max=SimulationOutput[1]
             else:
                 print("Error: EVENT NOT FOUND")
 

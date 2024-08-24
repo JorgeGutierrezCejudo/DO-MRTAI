@@ -3,7 +3,7 @@ import Tools.Defactorise as tl
 
 def UpdateInfoST(Asignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,Tmax,Distancia):
     A_implements,A_tasks,A_vehicles =tl.XAsignmentsDefactorise(Asignments)
-    A_vehiclesd =tl.ZAsignmentsDefactorise(ZAsignments)
+
 
     # for i in range(len(A_vehiclesd)):
     #     That[A_vehiclesd[i]]=Tmax[A_vehiclesd[i]]
@@ -29,8 +29,6 @@ def UpdateInfoST(Asignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,Tmax,
         if That[i]<0:
             That[i]=0
 
-    for i in range(len(A_vehiclesd)):
-        That[A_vehiclesd[i]]=Tmax[A_vehiclesd[i]]
 
     return Implements,Tasks,Vehicles,M,That
 

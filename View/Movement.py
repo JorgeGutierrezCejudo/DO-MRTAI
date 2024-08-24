@@ -16,6 +16,7 @@ def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl,
     New_task = []
     A_implements, A_tasks, A_vehicles = tl.XAsignmentsDefactorise(Asignments)
     num_vehicles = len(A_vehicles)
+    num_tasks = len(Tasks)
     num_vehiclesd = len(Z_vehicles)
 
     
@@ -75,7 +76,8 @@ def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl,
         if np.linalg.norm([dx, dy]) < Vl[i]:
             Vehicles[Z_vehicles[i], 0] = 1
             Vehicles[Z_vehicles[i], 1] = 1
-            #Event = [True, "Simulation", 2]
+            if num_vehicles<num_tasks:
+                Event = [True, "Simulation", 2]
 
     #Check if a new task appear
     if random.random() < probabilityTA:

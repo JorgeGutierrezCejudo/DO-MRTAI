@@ -1,5 +1,7 @@
 from datetime import datetime
 import numpy as np
+import Tools.Defactorise as tl
+
 
 class Event:
     def __init__(self, event_type, description, timestamp=None):
@@ -83,9 +85,10 @@ class ImplementEvent(Event):
         return print("New Implement")
 
 class SimulationEvent(Event):
-    def __init__(self, description,event_id, **kwargs):
+    def __init__(self, description,event_id,SimulationInfo, **kwargs):
         super().__init__("Simulation", description, **kwargs)
         self.event_id = event_id
+        self.SimulationInfo = SimulationInfo
 
     def process(self):
         # Lógica específica para eventos generales de simulación
@@ -95,10 +98,20 @@ class SimulationEvent(Event):
                     f"                   TASK DONE RE-CALCULATION THE ROUTES\n"
                     "***************************************************************************************************************"
                 )
+            SimulationOutput=[]
+            return SimulationOutput
         elif self.event_id == 2:
             print (
                     "***************************************************************************************************************\n"
                     f"                   VEHICLE FULL OF BATTERY RE-CALCULATION THE ROUTES\n"
                     "***************************************************************************************************************"
                 )
-        pass
+            ZAsignments = self.SimulationInfo[0]
+            That = self.SimulationInfo[1]
+            Tmax = self.SimulationInfo[2]
+            A_vehiclesd =tl.ZAsignmentsDefactorise(ZAsignments)
+            for i in range(len(A_vehiclesd)):
+                That[A_vehiclesd[i]]=Tmax[A_vehiclesd[i]]
+            SimulationOutput= [That,Tmax]
+        
+            return SimulationOutput
