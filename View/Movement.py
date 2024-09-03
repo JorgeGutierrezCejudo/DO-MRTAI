@@ -8,8 +8,8 @@ import time
 import matplotlib
 from Events import EventLogger as EVlogger
 from Events import Events as EV
-
-matplotlib.use('GTK3Agg')
+import time
+#matplotlib.use('GTK3Agg')
 
 def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles,Distancia,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA):
     Event = [False, "", 0]
@@ -176,17 +176,10 @@ def animate_allocation(Implements, Tasks, Vehicles, Asignments, ZAsignments,prob
             end_time = time.time()  # Registrar el tiempo de finalización
             execution_time = end_time - start_time  # Calcular el tiempo de ejecución
             ani.event_source.stop()
-            # plt.close(fig)
+            time.sleep(0.75)
+            plt.close(fig)
 
     ani = animation.FuncAnimation(fig, animate, frames=num_steps, interval=100)
     plt.show()
 
     return Event, Vehicles, Implements, Tasks, reached_info_all, execution_time, Distancia
-
-def NewTasks (num):
-    print("New tasks")
-    NTasks = np.random.randint(0, 100, size=(num,3))
-    Penalty=  np.random.randint(100, 1000, size=(num,1))
-    NTasks = np.concatenate((NTasks,Penalty),axis=1)
-
-    return NTasks

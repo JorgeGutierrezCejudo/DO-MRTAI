@@ -60,6 +60,7 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
     num_vehicles = len(Vehicles)
     full=True #Compatibilidad : true compatibiladad todos con todos
     dir=os.getcwd()
+    EventLogger=EVlogger.EventLogger()
 
 
 
@@ -102,7 +103,7 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
 
             #Optimization model
             if num_periods<=1:
-                modelo=sm.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime,Tmin)
+                modelo=smG.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime,Tmin)
             else:
                 modelo=dm.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,T_max,b,Tau,Vhat,Ihat,Khat,Cprime,Tmin)
             
@@ -166,31 +167,35 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
 
         if Event[0]:  
             if Event[1]=="Task":
-                TaskEvent = EV.TaskEvent("Task event", Event[2],1)
-                NTasks = TaskEvent.process()
+                EventProcess = EV.TaskEvent("Task event", Event[2],1)
+                NTasks = EventProcess.process()
                 Tasks=np.concatenate((Tasks,NTasks),axis=0) 
+                EventLogger.log_event(EventProcess)
+               
             elif Event[1]== "Vehicle" :
-                VehicleEvent = EV.VehicleEvent("New Vehicle", Event[2],Vehicles,1,data)
-                Vehicles = VehicleEvent.process()
-                print(Vehicles)
+                EventProcess = EV.VehicleEvent("New Vehicle", Event[2],Vehicles,1,data)
+                Vehicles = EventProcess.process()
+                EventLogger.log_event(EventProcess)
             elif Event[1]=="Implement":
-                ImplementEvent = EV.ImplementEvent("New Implement", Event[1],1)
-                NImplements = ImplementEvent.process()
+                EventProcess = EV.ImplementEvent("New Implement", Event[1],1)
+                NImplements =EventProcess.process()
+                EventLogger.log_event(EventProcess)
             elif Event[1]=="Simulation":
                 if Event[2]==2:
                     SimulationData = [ZAsignments,That,T_max]
                 else:
                     SimulationData = []
-                SimulationEvent = EV.SimulationEvent("Simulation Event", Event[2],SimulationData) 
-                SimulationOutput=SimulationEvent.process()
+                EventProcess = EV.SimulationEvent("Simulation Event", Event[2],SimulationData) 
+                SimulationOutput=EventProcess.process()
+                EventLogger.log_event(EventProcess)
                 if Event[2]==2:
                     That=SimulationOutput[0]
                     T_max=SimulationOutput[1]
             else:
                 print("Error: EVENT NOT FOUND")
 
-
-
+        Info=EventLogger.get_events_by_type()
+        Info=len(Info)
         Obj_prime=CostPenaltyRest+CostDistance_prime+DoneAsignationCost
         Obj+=Obj_prime
 
@@ -204,7 +209,8 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
             ["Cost of task done", DoneAsignationCost],
             ["Cost of distance", CostDistance_prime],
             ["Total objective value (this iteration)", Obj_prime],
-            ["Total objective value", Obj]
+            ["Total objective value", Obj],
+            ["Number of events",Info]
         ]
 
         print(tabulate(summary_data, headers=["Description", "Value"], tablefmt="rst"))
