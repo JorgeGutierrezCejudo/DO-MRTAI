@@ -1,27 +1,52 @@
+import copy as copy
+from pyscipopt import Model as Modelo
 import numpy as np
+import pandas as pd
+import os
 
-data = 1
-num = 1
-Vehicles = np.array([[56.26390165, 28.34456164, 0.89, 10, 73.99516129],
-                     [89.79634926, 43.70288105, 0.95, 100, 82.174375],
-                     [66.2856118, 18.50791373, 0.84, 100, 83.93181818]])
+estado_vehiculos = [1, 1, 0, 0, 0]  # Esta sería la lista de estados de los vehículos
+vehiculos_filtrados = [v for v, estado in enumerate(estado_vehiculos) if estado == 1]
 
-# Generación del nuevo vehículo
-np.random.seed(data + 20)
-Vehicle = np.random.randint(0, 100, size=(num, 2))
-EfVehicle = np.random.randint(80, 100, size=(num, 1)) / 100
-Vehicle = np.concatenate((Vehicle, EfVehicle), axis=1)
+# Filtrar implementos y tareas de manera similar si tienes un estado asociado a ellos
+# Suponiendo que también tienes una lista `estado_implements` y `estado_tareas`
+estado_implements = [1, 0, 0, 0, 0]  # Esta es solo un ejemplo
+estado_tareas = [1, 1, 0, 0]         # Esta es solo un ejemplo
 
-np.random.seed(data + 1)
-T_max = np.random.randint(100, 101, size=(num, 1))
-Vehicle = np.concatenate((Vehicle, T_max), axis=1)
+implementos_filtrados = [i for i, estado in enumerate(estado_implements) if estado == 1]
+tareas_filtradas = [k for k, estado in enumerate(estado_tareas) if estado == 1]
 
-np.random.seed(data)
-That = [np.random.randint(int(0.75 * T_max[i]), T_max[i]) for i in range(num)]
-That = np.array(That).reshape(num, 1)
-Vehicle = np.concatenate((Vehicle, That), axis=1)
+I = implementos_filtrados
+K = tareas_filtradas
+V = vehiculos_filtrados
+num_implements = len(estado_implements)
+num_tasks = len(estado_tareas)
+num_vehicles = len(estado_vehiculos)
 
-# Concatenar el nuevo vehículo a la lista de vehículos existente
-Vehicles = np.concatenate((Vehicles, Vehicle), axis=0)
+KI =[[i for i in range(num_tasks)] for _ in range(num_implements)]
+IK=[[i for i in range(num_implements)] for _ in range(num_tasks)]
+IV=[[i for i in range(num_implements)] for _ in range(num_vehicles)]
+VI=[[i for i in range(num_vehicles)] for _ in range(num_implements)]
+KV=[[i for i in range(num_tasks)] for _ in range(num_vehicles)]
+VK=[[i for i in range(num_vehicles)] for _ in range(num_tasks)]
 
-print(Vehicles)
+print(VK)
+
+# KI: Lista de implementos con las tareas compatibles
+KI = [[k for k in K] for i in I]
+
+# IK: Lista de tareas con los implementos compatibles
+IK = [[i for i in I] for k in K]
+
+# IV: Lista de implementos con los vehículos compatibles
+IV = [[v for v in V] for i in I]
+
+# VI: Lista de vehículos con los implementos compatibles
+VI = [[i for i in I] for v in V]
+
+# KV: Lista de tareas con los vehículos compatibles
+KV = [[v for v in V] for k in K]
+
+# VK: Lista de vehículos con las tareas compatibles
+VK = [[k for k in K] for v in V]
+
+print(VK)

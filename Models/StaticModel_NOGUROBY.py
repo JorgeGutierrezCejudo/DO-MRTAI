@@ -8,10 +8,6 @@ def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime
     #Model definition
     model = Modelo('3index-assignment-3')
     model.setParam("display/verblevel", 0)
-
-    Cmax = np.random.randint(0,1,size=len(V))
-    for i in V:
-        Cmax[i]=max(Cprime[i],np.max(C[:,:,i]))
     #Set model time limit
     timeLimit = 100
     # ------------------------------------ Decision Variables definitions 
@@ -32,7 +28,7 @@ def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime
     obj = sum(Cprime[v]* z[v]+ sum(C[i][k][v] * x[i, k, v] for i in I for k in K ) for v in V) + sum(M[k] *(1-y[k])for k in K)
     
     model.setObjective(obj, "minimize")
-
+    print(VI)
     #Constraints 5: at most 1 implement for task-vehicle 
     for i in I:
         model.addCons(sum(x[i, k, v] for k in KI[i] for v in VI[i]) <= 1)

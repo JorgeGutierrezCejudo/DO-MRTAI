@@ -69,21 +69,32 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
             Obj_prime=0
             Event[0]= False
             #Update the number of Implements, Tasks and Vehicles
+            StImplement=Implements[:,3]
+            StTask=Tasks[:,4]
+            StVehicle=Vehicles[:,5]
             num_implements = len(Implements)
             num_tasks = len(Tasks)
             num_vehicles = len(Vehicles)
-           
+
+
+
             Vhat = Ihat = np.ones((num_periods,num_vehicles)).astype(int)
             Khat = np.ones((num_periods,num_tasks),dtype=int).astype(int)
             Khat[1:num_periods][:]=0
+            num_implements = len(Implements)
+            num_tasks = len(Tasks)
+            num_vehicles = len(Vehicles)
 
             M=Tasks[:,3]
             That=Vehicles[:,4]
             T_max=Vehicles[:,3]
-            I=range(num_implements)
-            K=range(num_tasks)
-            V=range(num_vehicles)
+
+            I= [i for i, State in enumerate(StImplement) if State == 0]
+            K=[k for k, State in enumerate(StTask) if State == 0]
+            V=[i for i, State in enumerate(StVehicle) if State == 0]
             Tau=range(num_periods)
+
+            print(I, K, V)
 
             #Calculation of the cost and energy consumition
 
@@ -99,11 +110,11 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
 
             #Compatibility data
             os.chdir(dir)
-            IK,KI,IV,VI,KV,VK=dt.CompatibilityData(num_implements,num_tasks,num_vehicles,full)
+            IK,KI,IV,VI,KV,VK=dt.CompatibilityData(num_implements,num_tasks,num_vehicles,full,I,K,V)
 
             #Optimization model
             if num_periods<=1:
-                modelo=smG.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime,Tmin)
+                modelo=sm.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime,Tmin)
             else:
                 modelo=dm.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,T_max,b,Tau,Vhat,Ihat,Khat,Cprime,Tmin)
             
@@ -135,7 +146,7 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
                             ZAsignments[name] = val
                     
 
-
+            print(XAsignments)
 
             #Visualization
             # if num_periods<=1:

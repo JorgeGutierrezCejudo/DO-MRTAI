@@ -104,15 +104,15 @@ def CostData(num_implements,num_tasks,num_vehicles,set_data,num_periods,CostBala
 
     return C, M, That, I, K, V, Mmax, Cmax,T_max
 
-def CompatibilityData(num_implements,num_tasks,num_vehicles,full):
+def CompatibilityData(num_implements,num_tasks,num_vehicles,full,I,K,V):
     os.chdir("Data/Compatibility/")
-    if full==True:
-        KI =[[i for i in range(num_tasks)] for _ in range(num_implements)]
-        IK=[[i for i in range(num_implements)] for _ in range(num_tasks)]
-        IV=[[i for i in range(num_implements)] for _ in range(num_vehicles)]
-        VI=[[i for i in range(num_vehicles)] for _ in range(num_implements)]
-        KV=[[i for i in range(num_tasks)] for _ in range(num_vehicles)]
-        VK=[[i for i in range(num_vehicles)] for _ in range(num_tasks)]
+    if full==True:        
+        KI = [[i for i in range(len(K))] for _ in range(len(I))]
+        IK = [[i for i in range(len(I))] for _ in range(len(K))]
+        IV = [[i for i in range(len(I))] for _ in range(len(V))]
+        VI = [[i for i in range(len(V))] for _ in range(len(I))]
+        KV = [[i for i in range(len(K))] for _ in range(len(V))]
+        VK = [[i for i in range(len(V))] for _ in range(len(K))]
 
     else:
         with open("CompData-"+str(num_implements)+","+str(num_tasks)+","+str(num_vehicles)+".txt", 'r') as file:
@@ -228,9 +228,9 @@ def PositionData(num_implements,num_tasks,num_vehicles,set_data):
     directory_path="Positions-("+str(num_implements)+","+str(num_tasks)+","+str(num_vehicles)+")-"+str(set_data)
     if os.path.exists(directory_path):
         os.chdir(directory_path)
-        Implements = np.loadtxt('Implements.csv', delimiter=',',dtype=float).reshape(num_implements,3)
-        Tasks = np.loadtxt('Tasks.csv', delimiter=',', dtype=int).reshape(num_tasks,4)
-        Vehicles = np.loadtxt('Vehicles.csv', delimiter=',', dtype=float).reshape(num_vehicles,5)
+        Implements = np.loadtxt('Implements.csv', delimiter=',',dtype=float).reshape(num_implements,4)
+        Tasks = np.loadtxt('Tasks.csv', delimiter=',', dtype=int).reshape(num_tasks,5)
+        Vehicles = np.loadtxt('Vehicles.csv', delimiter=',', dtype=float).reshape(num_vehicles,6)
     else:
         os.makedirs(directory_path)
         os.chdir(directory_path)
@@ -238,12 +238,16 @@ def PositionData(num_implements,num_tasks,num_vehicles,set_data):
         Implements = np.random.randint(0, 100, size=(num_implements,2))
         np.random.seed(set_data)
         EfImplement=  np.random.randint(80, 100, size=(num_implements,1))
+        StImplement=np.zeros((num_implements))
         Implements = np.concatenate((Implements,EfImplement/100),axis=1)
+        Implements = np.concatenate((Implements,StImplement.reshape(-1,1)),axis=1)
         np.random.seed(set_data+10)
         Tasks = np.random.randint(0, 100, size=(num_tasks,3))
         np.random.seed(set_data+12)
         Penalty=  np.random.randint(100, 1000, size=(num_tasks,1))
         Tasks = np.concatenate((Tasks,Penalty),axis=1)
+        StTask=np.zeros((num_tasks))
+        Tasks = np.concatenate((Tasks,StTask.reshape(-1,1)),axis=1)
         np.random.seed(set_data+20)
         Vehicles = np.random.randint(0, 100, size=(num_vehicles,2))
         np.random.seed(set_data+20)
@@ -256,12 +260,14 @@ def PositionData(num_implements,num_tasks,num_vehicles,set_data):
         That = [np.random.randint(0.75*T_max[i], T_max[i]) for i in range(num_vehicles)]
         That = np.array(That)
         Vehicles = np.concatenate((Vehicles,That.reshape(-1,1)),axis=1)
+        StVehicle=np.zeros((num_vehicles))
+        Vehicles = np.concatenate((Vehicles,StVehicle.reshape(-1,1)),axis=1)
 
         
 
-        Implements_reshaped = Implements.reshape(-1, 3)
-        Tasks_reshaped = Tasks.reshape(-1, 4)
-        Vehicles_reshaped = Vehicles.reshape(-1, 5)
+        Implements_reshaped = Implements.reshape(-1, 4)
+        Tasks_reshaped = Tasks.reshape(-1, 5)
+        Vehicles_reshaped = Vehicles.reshape(-1, 6)
 
         pd.DataFrame(Implements_reshaped).to_csv('Implements.csv', index=False, header=False)
         pd.DataFrame(Tasks_reshaped).to_csv('Tasks.csv', index=False, header=False)

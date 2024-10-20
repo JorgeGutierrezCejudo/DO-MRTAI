@@ -9,7 +9,7 @@ import matplotlib
 from Events import EventLogger as EVlogger
 from Events import Events as EV
 import time
-#matplotlib.use('GTK3Agg')
+matplotlib.use('GTK3Agg')
 
 def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles,Distancia,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA):
     Event = [False, "", 0]
@@ -23,6 +23,7 @@ def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl,
     reached_info = []  # Lista para almacenar la información de los vehículos que han llegado
     
     for i in range(num_vehicles):
+
         if not reached_implements[A_vehicles[i]]:
             # Move vehicles towards their respective implements
             dx = Implements[A_implements[i], 0] - Vehicles[A_vehicles[i], 0]
