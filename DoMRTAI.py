@@ -18,6 +18,8 @@ import math
 from Events import EventLogger as EVlogger
 from Events import Events as EV
 from tabulate import tabulate
+from ROS import RealCost as rc
+import time
 
 
 
@@ -94,7 +96,6 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
             V=[i for i, State in enumerate(StVehicle) if State == 0]
             Tau=range(num_periods)
 
-            print(I, K, V)
 
             #Calculation of the cost and energy consumition
 
@@ -103,7 +104,6 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
             Cprime=ct.PrimeCalculation(num_implements,num_tasks,num_vehicles,Implements,Tasks,Vehicles)
             if num_periods>1:
                 Cst,Cd,Bst,Bd,M,Cprime=ct.TimeExtendCalculation(num_periods,num_implements,num_tasks,num_vehicles,Cst,Cd,Bst,Bd,M,Cprime,Tasks)
-            C=(CostBalance[0]*Cst+CostBalance[1]*Cd).astype(int)
             b=(EnergyBalance[0]*Bst+EnergyBalance[1]*Bd).astype(int)
             Cmax,Mmax=ct.NormalicedCalculation(num_periods,M,range(num_tasks))
 
@@ -113,40 +113,44 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
             IK,KI,IV,VI,KV,VK=dt.CompatibilityData(num_implements,num_tasks,num_vehicles,full,I,K,V)
 
             #Optimization model
-            if num_periods<=1:
-                modelo=sm.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime,Tmin)
-            else:
-                modelo=dm.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,T_max,b,Tau,Vhat,Ihat,Khat,Cprime,Tmin)
-            
-            os.chdir(dir)
-            #modelo.write("model"+str(i)+".lp")
-            try: 
-                all_vars = modelo.getVars()
-                tprime=modelo.getAttr("Runtime")
-                values = modelo.getAttr("X", all_vars)
-                names = modelo.getAttr("VarName", all_vars)
-                XAsignments = {name: val for name,val in zip(names, values) if ((val>0) and ((name.startswith('x'))))}
-                ZAsignments = {name: val for name,val in zip(names, values) if ((val>0) and ((name.startswith('z'))))}
-                if num_periods>1:
-                    TAsignments= {name: val for name,val in zip(names, values) if ((val>0) and ((name.startswith('T'))))}
-            except: 
-                XAsignments={}
-                ZAsignments={}
-                tprime=modelo.getSolvingTime()
-                solution = modelo.getBestSol()
-                all_vars = modelo.getVars()
-                # Recorrer todas las variables y filtrar por las que tienen valores mayores a 0 y empiezan con 'x' o 'z'
-                for var in all_vars:
-                    val = modelo.getSolVal(solution, var)
-                    name = var.name
-                    if val > 0:
-                        if name.startswith('x'):
-                            XAsignments[name] = val
-                        elif name.startswith('z'):
-                            ZAsignments[name] = val
-                    
+            Error=10
+            while Error>5:
+                C=(CostBalance[0]*Cst+CostBalance[1]*Cd).astype(int)
+                if num_periods<=1:
+                    modelo=sm.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime,Tmin)
+                else:
+                    modelo=dm.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,T_max,b,Tau,Vhat,Ihat,Khat,Cprime,Tmin)
 
-            print(XAsignments)
+                time.sleep(1)
+                os.chdir(dir)
+                #modelo.write("model"+str(i)+".lp")
+                try: 
+                    all_vars = modelo.getVars()
+                    tprime=modelo.getAttr("Runtime")
+                    values = modelo.getAttr("X", all_vars)
+                    names = modelo.getAttr("VarName", all_vars)
+                    XAsignments = {name: val for name,val in zip(names, values) if ((val>0) and ((name.startswith('x'))))}
+                    ZAsignments = {name: val for name,val in zip(names, values) if ((val>0) and ((name.startswith('z'))))}
+                    if num_periods>1:
+                        TAsignments= {name: val for name,val in zip(names, values) if ((val>0) and ((name.startswith('T'))))}
+                except: 
+                    XAsignments={}
+                    ZAsignments={}
+                    tprime=modelo.getSolvingTime()
+                    solution = modelo.getBestSol()
+                    all_vars = modelo.getVars()
+                    # Recorrer todas las variables y filtrar por las que tienen valores mayores a 0 y empiezan con 'x' o 'z'
+                    for var in all_vars:
+                        val = modelo.getSolVal(solution, var)
+                        name = var.name
+                        if val > 0:
+                            if name.startswith('x'):
+                                XAsignments[name] = val
+                            elif name.startswith('z'):
+                                ZAsignments[name] = val
+                #Error,Cd=rc.RealCost(XAsignments,Implements,Tasks,Vehicles,Cd)
+                Error=0
+                    
 
             #Visualization
             # if num_periods<=1:
@@ -156,11 +160,12 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
             os.chdir(dir)
             t=t+tprime
         
-
-        if num_periods<=1:
-            Event,Vehicles,Implements,Tasks,AssignmentT,tmo,Distancia=mv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA)
-        else:
-            Event,Implements,Tasks,Vehicles=temv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA)
+  
+        if Event[0]==False: 
+            if num_periods<=1:
+                Event,Vehicles,Implements,Tasks,AssignmentT,tmo,Distancia=mv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA)
+            else:
+                Event,Implements,Tasks,Vehicles=temv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA)
         
 
         #Postprocessing:
@@ -225,6 +230,10 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
         ]
 
         print(tabulate(summary_data, headers=["Description", "Value"], tablefmt="rst"))
+        K=[k for k, State in enumerate(StTask) if State == 0]
+        if len(K)==0:
+            Tasks=[]
+
 
     
 

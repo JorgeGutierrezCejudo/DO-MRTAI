@@ -4,6 +4,7 @@ import os
 import json
 import Data
 import DoMRTAI as dm
+import time
 
 # Directorio y balance de costos y energía
 CostBalance = [1, 0.01]  # [Costo de estático, Costo de dinámico]

@@ -21,8 +21,7 @@ def UpdateInfoST(Asignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,Tmax,
 
     A_tasks=sorted(A_tasks,reverse=True)
     for i in range(len(A_tasks)):
-        Tasks=np.delete(Tasks,A_tasks[i],axis=0)
-        M=np.delete(M,A_tasks[i])
+        Tasks[A_tasks[i],4]=1
 
     for i in range (len(Vehicles)):
         That[i] -= Distancia[i]*0.05
