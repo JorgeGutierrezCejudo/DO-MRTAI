@@ -9,7 +9,7 @@ import matplotlib
 from Events import EventLogger as EVlogger
 from Events import Events as EV
 import time
-matplotlib.use('GTK3Agg')
+#matplotlib.use('GTK3Agg')
 
 def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles,Distancia,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA):
     Event = [False, "", 0]
@@ -126,8 +126,8 @@ def init_plot(ax, Implements, Tasks, Vehicles):
 
     ax.set_title("Allocation Problem")
     ax.legend(loc='upper right')
-    ax.set_xlim(-1, 100)
-    ax.set_ylim(-1, 100)
+    ax.set_xlim(-1, 30)
+    ax.set_ylim(-1, 30)
 
 
 def update_plot(ax, Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles, Distancia, probabilityTA, probabilityTD, probabilityVA, probabilityVD, probabilityID, probabilityIA):
@@ -188,7 +188,7 @@ def animate_allocation(Implements, Tasks, Vehicles, Asignments, ZAsignments,prob
             execution_time = end_time - start_time  # Calcular el tiempo de ejecución
             ani.event_source.stop()
             time.sleep(0.75)
-            plt.close(fig)
+            #plt.close(fig)
 
     ani = animation.FuncAnimation(fig, animate, frames=num_steps, interval=100)
     plt.show()

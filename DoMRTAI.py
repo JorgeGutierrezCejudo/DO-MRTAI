@@ -5,10 +5,8 @@ from View import StView as vw
 from View import TEView as tew
 from View import Movement as mv
 from View import TEMovement as temv
-from Models import StaticModel_NOGUROBY as sm
+from Models import StaticModel as sm
 from Models import DynamicModel as dm
-from Models import StaticModel as smG
-from pyscipopt import Model as Modelo
 import os
 import Cost as ct
 import Preprocessing as pp
@@ -20,6 +18,7 @@ from Events import Events as EV
 from tabulate import tabulate
 from ROS import RealCost as rc
 import time
+import roslibpy
 
 
 
@@ -63,6 +62,9 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
     full=True #Compatibilidad : true compatibiladad todos con todos
     dir=os.getcwd()
     EventLogger=EVlogger.EventLogger()
+    client = roslibpy.Ros(host="192.168.1.54", port=9090)
+    client.run()
+    print("Connected with ROS")
 
 
 
@@ -121,7 +123,6 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
                 else:
                     modelo=dm.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,T_max,b,Tau,Vhat,Ihat,Khat,Cprime,Tmin)
 
-                time.sleep(1)
                 os.chdir(dir)
                 #modelo.write("model"+str(i)+".lp")
                 try: 
@@ -148,8 +149,8 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
                                 XAsignments[name] = val
                             elif name.startswith('z'):
                                 ZAsignments[name] = val
-                #Error,Cd=rc.RealCost(XAsignments,Implements,Tasks,Vehicles,Cd)
-                Error=0
+                Error,Cd=rc.RealCost(XAsignments,Implements,Tasks,Vehicles,Cd,client)
+               
                     
 
             #Visualization

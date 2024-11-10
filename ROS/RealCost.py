@@ -1,113 +1,120 @@
 #!/usr/bin/env python
 
-
-import rospy
-from nav_msgs.srv import GetPlan
-from geometry_msgs.msg import PoseStamped
+import roslibpy
 import math
-import sys
-import time
-import actionlib
 import numpy as np
 from Tools import Defactorise as df
 
 
-def RealCost(Asignation,Implements,Tasks,Vehicles,CostEstimation):
-    real_cost=np.zeros(len(Asignation))
-    Error=np.zeros(len(Asignation))
+def calculate_distance(p1, p2):
+    """Calcula la distancia euclidiana entre dos puntos."""
+    return math.sqrt((p2["x"] - p1["x"])**2 + (p2["y"] - p1["y"])**2)
 
+
+def get_plan_distance(client, service_name, start_pose, goal_pose, tolerance):
+    """
+    Llama al servicio de planificación y calcula la distancia total del plan.
+    
+    Args:
+        client: Cliente ROS conectado.
+        service_name: Nombre del servicio para llamar.
+        start_pose: Pose inicial en formato de diccionario.
+        goal_pose: Pose objetivo en formato de diccionario.
+        tolerance: Tolerancia en el cálculo del plan.
+        
+    Returns:
+        Distancia total del recorrido planificado.
+    """
+    service = roslibpy.Service(client, service_name, "nav_msgs/GetPlan")
+    get_plan_request = {
+        "start": {
+            "header": {
+                "seq": 0,
+                "stamp": {"secs": 0, "nsecs": 0},
+                "frame_id": "map"
+            },
+            "pose": start_pose
+        },
+        "goal": {
+            "header": {
+                "seq": 0,
+                "stamp": {"secs": 0, "nsecs": 0},
+                "frame_id": "map"
+            },
+            "pose": goal_pose
+        },
+        "tolerance": tolerance
+    }
+
+    request = roslibpy.ServiceRequest(get_plan_request)
+    response = service.call(request)
+    
+    poses = response["plan"]["poses"]
+    total_distance = 0.0
+    for i in range(len(poses) - 1):
+        p1 = poses[i]["pose"]["position"]
+        p2 = poses[i + 1]["pose"]["position"]
+        total_distance += calculate_distance(p1, p2)
+    
+    return total_distance
+
+
+def RealCost(Asignation, Implements, Tasks, Vehicles, CostEstimation,client):
+    """
+    Calcula el costo real y el error para las asignaciones de vehículos, implementos y tareas.
+    
+    Args:
+        Asignation: Matriz de asignaciones.
+        Implements: Coordenadas de los implementos.
+        Tasks: Coordenadas de las tareas.
+        Vehicles: Coordenadas iniciales de los vehículos.
+        CostEstimation: Estimación de costos.
+        
+    Returns:
+        Tuple de errores y la matriz de estimaciones actualizada.
+    """
+    real_cost = np.zeros(len(Asignation))
+    Error = np.zeros(len(Asignation))
+    
     for i in range(len(Asignation)):
-        A_implements, A_tasks, A_vehicles=df.XAsignmentsDefactorise(Asignation)
+        A_implements, A_tasks, A_vehicles = df.XAsignmentsDefactorise(Asignation)
 
-        xinit = Vehicles[A_vehicles[i],0]
-        yinit = Vehicles[A_vehicles[i],1]
-        ximplement = Implements[A_implements[i],0]
-        yimplement = Implements[A_implements[i],1]
-        xgoal = Tasks[A_tasks[i],0]
-        ygoal = Tasks[A_tasks[i],1]
+        # Poses iniciales, de implementos y tareas
+        start_pose = {
+            "position": {"x": Vehicles[A_vehicles[i], 0], "y": Vehicles[A_vehicles[i], 1], "z": 0.0},
+            "orientation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}
+        }
+        implement_pose = {
+            "position": {"x": Implements[A_implements[i], 0], "y": Implements[A_implements[i], 1], "z": 0.0},
+            "orientation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}
+        }
+        task_pose = {
+            "position": {"x": Tasks[A_tasks[i], 0], "y": Tasks[A_tasks[i], 1], "z": 0.0},
+            "orientation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}
+        }
 
-        # Create service client
-        client = rospy.ServiceProxy('robot_0/move_base/make_plan', GetPlan)
-
-        # Create request message
-        start = PoseStamped()
-        start.header.frame_id = "map"
-        start.pose.position.x = xinit
-        start.pose.position.y = yinit
-        start.pose.orientation.w = 0.0
-        goal = PoseStamped()
-        goal.header.frame_id = "map"
-        goal.pose.position.x = ximplement
-        goal.pose.position.y = yimplement
-        goal.pose.orientation.w = 0.0
-        tolerance = 1
+        # Distancia vehículo a implemento
+        vehicle_to_implement_distance = get_plan_distance(client, 'robot_0/move_base/make_plan', start_pose, implement_pose, 1.0)
         
-        # Call service
-        try:
-            response = client(start,goal, tolerance)
-            # Print response message
-            rospy.loginfo("Got plan with %d waypoints.", len(response.plan.poses))
-        except rospy.ServiceException as e:
-            rospy.logerr("Failed to call service /move_base/make_plan: %s",)
+        # Distancia implemento a tarea
+        implement_to_task_distance = get_plan_distance(client, 'robot_0/move_base/make_plan', implement_pose, task_pose, 1.0)
 
-        VehicleImplemtDistance = 0
-        for j in range(1, len(response.plan.poses)):
-            P1=response.plan.poses[j-1]
-            P2=response.plan.poses[j]
-            x1, y1 = P1.pose.position.x, P1.pose.position.y
-            x2, y2 = P2.pose.position.x, P2.pose.position.y
-            VehicleImplemtDistance += math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+        # Costo real y error
+        real_cost[i] = vehicle_to_implement_distance + implement_to_task_distance
+        estimated_cost = CostEstimation[A_implements[i], A_tasks[i], A_vehicles[i]]
+        Difference = abs(estimated_cost - real_cost[i])
+        Error[i] = Difference / estimated_cost
 
-        # Create request message
-        start = PoseStamped()
-        start.header.frame_id = "map"
-        start.pose.position.x = ximplement
-        start.pose.position.y = yimplement
-        start.pose.orientation.w = 0.0
-        goal = PoseStamped()
-        goal.header.frame_id = "map"
-        goal.pose.position.x = xgoal
-        goal.pose.position.y = ygoal
-        goal.pose.orientation.w = 0.0
-        tolerance = 1
-        
-        # Call service
-        try:
-            response = client(start,goal, tolerance)
-        except rospy.ServiceException as e:
-            rospy.logerr("Failed to call service /move_base/make_plan: %s",)
-
-        taskImplemtDistance = 0
-        for k in range(1, len(response.plan.poses)):
-            P1=response.plan.poses[k-1]
-            P2=response.plan.poses[k]
-            x1, y1 = P1.pose.position.x, P1.pose.position.y
-            x2, y2 = P2.pose.position.x, P2.pose.position.y
-            taskImplemtDistance += math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
-
-        
-        real_cost[i] = VehicleImplemtDistance + taskImplemtDistance
-
-        Diference = abs(CostEstimation[A_implements[i],A_tasks[i],A_vehicles[i]] - real_cost[i])
-        Error[i] = Diference / CostEstimation[A_implements[i],A_tasks[i],A_vehicles[i]]
-
+    # Actualización de costos y manejo de errores
     for i in range(len(Asignation)):
         if Error[i] > 0.1:
-            print("The error is greater than 10 for the cost of",A_vehicles[i])
-            CostEstimation[A_implements[i],A_tasks[i],A_vehicles[i]] = real_cost[i]
+            print(f"The error is greater than 10% for the cost of vehicle {A_vehicles[i]}")
+            CostEstimation[A_implements[i], A_tasks[i], A_vehicles[i]] = real_cost[i]
             Errors = 10
             break
-        
         else:
-            print("Good estimation for the cost of",A_vehicles[i])
-            print("The real cost is",real_cost[i],"and the estimated cost is",CostEstimation[A_implements[i],A_tasks[i],A_vehicles[i]])
-            Errors=0
-    return Errors,CostEstimation
-        
+            print(f"Good estimation for the cost of vehicle {A_vehicles[i]}")
+            print(f"The real cost is {real_cost[i]:.2f} and the estimated cost is {CostEstimation[A_implements[i], A_tasks[i], A_vehicles[i]]:.2f}")
+            Errors = 0
     
-    
-
-
-
-
-
+    return Errors, CostEstimation

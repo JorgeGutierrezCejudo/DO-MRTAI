@@ -38,14 +38,14 @@ def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime
 
     #Constraints 5: at most 1 implement for task-vehicle 
     for i in I:
-        model.addConstr(quicksum(x[i, k, v] for k in KI[i] for v in VI[i]) <= 1)
+        model.addConstr(quicksum(x[i, k, v] for k in K for v in V) <= 1)
 
     #Constraints 6: at most 1 task for implement-vehicle
     for k in K:
-        model.addConstr(quicksum(x[i, k, v] for i in IK[k] for v in VK[k]) == y[k])
+        model.addConstr(quicksum(x[i, k, v] for i in I for v in V) == y[k])
     #Constraints 7: vehicle assignment to depot or task-implement
     for v in V:
-        model.addConstr(z[v] + quicksum(x[i, k, v] for i in IV[v] for k in KV[v]) == 1)
+        model.addConstr(z[v] + quicksum(x[i, k, v] for i in I for k in K) == 1)
     #Constraints 8: vehicle autonomy constraints (could be preprocessed)
     for v in V:
         model.addConstr(quicksum((b[i][k][v]) * x[i, k, v] for i in I for k in K) <= abs(That[v]-Tmin))
