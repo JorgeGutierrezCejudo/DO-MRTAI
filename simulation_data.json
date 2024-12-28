@@ -1,0 +1,70 @@
+[
+    [
+        "Battery of vehicule 1",
+        18
+    ],
+    [
+        "Battery of vehicule 2",
+        43
+    ],
+    [
+        "Battery of vehicule 3",
+        76
+    ],
+    [
+        "Battery of vehicule 4",
+        69
+    ],
+    [
+        "Battery of vehicule 5",
+        77
+    ],
+    [
+        "Distance of vehicule 1",
+        1229
+    ],
+    [
+        "Distance of vehicule 2",
+        832
+    ],
+    [
+        "Distance of vehicule 3",
+        199
+    ],
+    [
+        "Distance of vehicule 4",
+        260
+    ],
+    [
+        "Distance of vehicule 5",
+        118
+    ],
+    [
+        "Elapsed time",
+        33.74680185317993
+    ],
+    [
+        "Cost of penalty of task do not finish",
+        1898.2576042413712
+    ],
+    [
+        "Cost of task done",
+        965.813629848957
+    ],
+    [
+        "Cost of distance",
+        205.78762152966422
+    ],
+    [
+        "Total objective value (this iteration)",
+        3069.8588556199925
+    ],
+    [
+        "Total objective value",
+        5548.483217068831
+    ],
+    [
+        "Number of events",
+        10
+    ]
+]

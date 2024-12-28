@@ -9,18 +9,18 @@ def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime
     #Model definition
     model = Model('3index-assignment-3')
 
+
     Cmax = np.random.randint(0,1,size=len(V))
     for i in V:
         Cmax[i]=max(Cprime[i],np.max(C[:,:,i]))
     #Set model time limit
-    timeLimit = 100
+    timeLimit = 1000
     model.setParam('TimeLimit', timeLimit)
     #model.setParam('MIPGap', 0)
     # ------------------------------------ Decision Variables definitions 
     #Decision variables
-    x = {(i,k,v):model.addVar(vtype=GRB.BINARY, name="x_" + str(i) + "_" + str(k) + "_" + str(v)) 
-                        for i in I for k in K for v in V 
-            }
+    x = {(i, k, v): model.addVar(vtype=GRB.BINARY, name="x_" + str(i) + "_" + str(k) + "_" + str(v)) 
+         for i in I for k in K for v in V if IK[i, k] == 1 and IV[i, v] == 1 and VK[v, k] == 1}
 
     y = {(k): model.addVar(vtype=GRB.BINARY, name="y_" + str(k))
                     for k in K 
@@ -31,28 +31,31 @@ def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime
             }
 
     #Objective function
-    obj = (alpha)*(quicksum(((quicksum((C[i][k][v] * x[i, k, v]) for i in I for k in K) + Cprime[v]*z[v])/(Cmax[v])) for v in V)) \
-        + (beta/Mmax) * quicksum(M[k] * (1 - y[k]) for k in K)
+    obj = (alpha) * quicksum(
+        ((quicksum(C[i][k][v] * x[i, k, v] for (i, k, v) in x if v == vehicle) + Cprime[vehicle] * z[vehicle]) / Cmax[vehicle])
+        for vehicle in V
+    ) + (beta / Mmax) * quicksum(M[k] * (1 - y[k]) for k in K)
     
     model.setObjective(obj, GRB.MINIMIZE)
 
     #Constraints 5: at most 1 implement for task-vehicle 
     for i in I:
-        model.addConstr(quicksum(x[i, k, v] for k in KI[i] for v in VI[i]) <= 1)
+        model.addConstr(quicksum(x[i, k, v] for k in K for v in V if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1) <= 1)
 
     #Constraints 6: at most 1 task for implement-vehicle
     for k in K:
-        model.addConstr(quicksum(x[i, k, v] for i in IK[k] for v in VK[k]) == y[k])
+        model.addConstr(quicksum(x[i, k, v] for i in I for v in V if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1) == y[k])
     #Constraints 7: vehicle assignment to depot or task-implement
     for v in V:
-        model.addConstr(z[v] + quicksum(x[i, k, v] for i in IV[v] for k in KV[v]) == 1)
+        model.addConstr(z[v] + quicksum(x[i, k, v] for i in I for k in K if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1) == 1)
     #Constraints 8: vehicle autonomy constraints (could be preprocessed)
     for v in V:
-        model.addConstr(quicksum((b[i][k][v]) * x[i, k, v] for i in I for k in K) <= That[v]-Tmin)
+        model.addConstr(quicksum((b[i][k][v]) * x[i, k, v] for i in I for k in K if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1) <= That[v]-Tmin)
 
 
     #Solving
     model.optimize()
+    model.write("model.lp")
 
 
 

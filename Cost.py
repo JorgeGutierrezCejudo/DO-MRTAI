@@ -52,15 +52,17 @@ def PrimeCalculation(num_implements,num_tasks,num_vehicles,Implements,Tasks,Vehi
         Cprime[v]=Distance
     return Cprime
 
-def NormalicedCalculation(num_periods,M,K):
-    if num_periods<=1:
-        Cmax=1
-        Mmax=sum(M[k] for k in K)
-    else:
-        Cmax=1
-        Mmax=sum(M[0][k] for k in K for t in range(num_periods))
+def NormalicedCalculation(num_periods, M,I,K,V,c_ikv, c_v0_prime):
+    max_cikv=np.zeros(len(V))
+    Cmax=np.zeros(len(V))
+    for v in V:
+        max_cikv[v] = max(c_ikv[i, k, v] for i in I for k in K)
+        Cmax[v] = max(max_cikv[v], c_v0_prime[v])
 
-    return Cmax,Mmax
+    Mmax = sum(M[k] for k in K)
+
+    return Cmax, Mmax
+
 
 def TimeExtendCalculation (num_periods,num_implements,num_tasks,num_vehicles,Cst,Cd,bst,bd,M,Cprime,Tasks):
     
@@ -70,9 +72,6 @@ def TimeExtendCalculation (num_periods,num_implements,num_tasks,num_vehicles,Cst
     bst_pivot=bst
     Cprime_pivot=Cprime
     bd_pivot=bd
-
-
-
 
 
     #Dynamic calculation of the energy consumption take account the worst case scenario
@@ -103,16 +102,11 @@ def TimeExtendCalculation (num_periods,num_implements,num_tasks,num_vehicles,Cst
     #                 Xdivk=abs(xTask[k]-XPosition[i,v])
     #                 Ydivk=abs(yTask[k]-YPosition[i,v])
     #                 Distance2=sqrt(Xdivk**2+Ydivk**2)
-    #                 bdt[i,k,v]=int(0.2*((Distance2))+bd_pivot[i,k,v])
+    #                 bdt[i,k,v]=int(0.2*4 ((Distance2))+bd_pivot[i,k,v])
     #     bd=np.concatenate((bd,bdt)).astype(int)
     #     bd_pivot=bdt
 
         
-        
-       
-    
-
-
                 
     for _ in range(num_periods-1):
         Cstt = np.random.normal(loc=Cst, scale=1).astype(int)

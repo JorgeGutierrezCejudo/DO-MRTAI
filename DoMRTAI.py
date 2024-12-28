@@ -1,11 +1,12 @@
 import numpy as np
+import json
 import pandas as pd
 import Data as dt
 from View import StView as vw
 from View import TEView as tew
 from View import Movement as mv
 from View import TEMovement as temv
-from Models import StaticModel as sm
+from Models import StaticModelSMC as sm
 from Models import DynamicModel as dm
 import os
 import Cost as ct
@@ -19,6 +20,7 @@ from tabulate import tabulate
 from ROS import RealCost as rc
 import time
 import roslibpy
+from gurobipy import GRB
 
 
 
@@ -29,14 +31,12 @@ import roslibpy
 # num_vehicles = 5
 # num_periods = 1
 # T=40
-
-# dir=os.getcwd()
-# os.chdir(dir)
 # Implements,Tasks,Vehicles=dt.PositionData(num_implements,num_tasks,num_vehicles,set_data)
 
 
 
-def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA):
+def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA,full,set_data):
+    DATA_FILE = "simulation_data.json"
     InfoTaskDone=[]
     data=1
     t=0
@@ -51,20 +51,19 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
     M=Tasks[:,3]
     That=Vehicles[:,4]
     b=0
-    TotalDistancia = np.ones((len(Vehicles)),dtype=float)
+    totalDistancia = np.ones((len(Vehicles)),dtype=float)
     Distancia=np.ones((len(Vehicles)),dtype=float)
     T_max=Vehicles[:,3]
     CostBalance = [1,1]
-    alpha,beta=0.5,0.5
+    alpha,beta=0.05,0.95
     EnergyBalance = [1,1]
-    Tmin=20
+    Tmin=5
     num_vehicles = len(Vehicles)
-    full=True #Compatibilidad : true compatibiladad todos con todos
     dir=os.getcwd()
     EventLogger=EVlogger.EventLogger()
-    client = roslibpy.Ros(host="192.168.1.54", port=9090)
-    client.run()
-    print("Connected with ROS")
+    # client = roslibpy.Ros(host="192.168.1.54", port=9090)
+    # client.run()
+    # print("Connected with ROS")
 
 
 
@@ -107,17 +106,20 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
             if num_periods>1:
                 Cst,Cd,Bst,Bd,M,Cprime=ct.TimeExtendCalculation(num_periods,num_implements,num_tasks,num_vehicles,Cst,Cd,Bst,Bd,M,Cprime,Tasks)
             b=(EnergyBalance[0]*Bst+EnergyBalance[1]*Bd).astype(int)
-            Cmax,Mmax=ct.NormalicedCalculation(num_periods,M,range(num_tasks))
+            
 
 
             #Compatibility data
             os.chdir(dir)
-            IK,KI,IV,VI,KV,VK=dt.CompatibilityData(num_implements,num_tasks,num_vehicles,full,I,K,V)
-
+            IK,KI,IV,VI,KV,VK=dt.CompatibilityData(num_implements,num_tasks,num_vehicles,full,set_data)
+            os.chdir(dir)
+            
             #Optimization model
             Error=10
             while Error>5:
                 C=(CostBalance[0]*Cst+CostBalance[1]*Cd).astype(int)
+                Cmax,Mmax=ct.NormalicedCalculation(num_periods, M,I,K,V,C, Cprime)
+
                 if num_periods<=1:
                     modelo=sm.Optimization(C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime,Tmin)
                 else:
@@ -126,6 +128,11 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
                 os.chdir(dir)
                 #modelo.write("model"+str(i)+".lp")
                 try: 
+                    if modelo.Status == GRB.Status.INFEASIBLE:
+                        print("The model is infeasible. Stopping optimization.")
+                        modelo.write("infeasible_model.ilp")  # Save the model for analysis
+                        input()  # Wait for the user to press Enter
+                        break
                     all_vars = modelo.getVars()
                     tprime=modelo.getAttr("Runtime")
                     values = modelo.getAttr("X", all_vars)
@@ -149,7 +156,8 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
                                 XAsignments[name] = val
                             elif name.startswith('z'):
                                 ZAsignments[name] = val
-                Error,Cd=rc.RealCost(XAsignments,Implements,Tasks,Vehicles,Cd,client)
+                Error=0
+                # Error,Cd=rc.RealCost(XAsignments,Implements,Tasks,Vehicles,Cd,client)
                
                     
 
@@ -164,7 +172,7 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
   
         if Event[0]==False: 
             if num_periods<=1:
-                Event,Vehicles,Implements,Tasks,AssignmentT,tmo,Distancia=mv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA)
+                Event,Vehicles,Implements,Tasks,AssignmentT,tmo,Distancia,totalDistancia=mv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA,0,totalDistancia)
             else:
                 Event,Implements,Tasks,Vehicles=temv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA)
         
@@ -217,7 +225,7 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
         Obj+=Obj_prime
 
         That_list = [[f"Battery of vehicule {i+1}", int(That[i])] for i in range(num_vehicles)]
-        Distancia_list = [[f"Distance of vehicule {i+1}", int(Distancia[i])] for i in range(num_vehicles)]
+        Distancia_list = [[f"Distance of vehicule {i+1}", int(totalDistancia[i])] for i in range(num_vehicles)]
         summary_data = [
             *That_list,
             *Distancia_list,
@@ -230,7 +238,11 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
             ["Number of events",Info]
         ]
 
-        print(tabulate(summary_data, headers=["Description", "Value"], tablefmt="rst"))
+
+        with open(DATA_FILE, "w") as file:
+            json.dump(summary_data, file, indent=4)
+
+
         K=[k for k, State in enumerate(StTask) if State == 0]
         if len(K)==0:
             Tasks=[]

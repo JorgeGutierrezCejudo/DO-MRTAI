@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import os
 import json
+import subprocess  # Para lanzar el script de visualización
 import Data
 import DoMRTAI as dm
 import time
@@ -61,6 +62,9 @@ def load_config():
 
 def run_optimization():
     
+# Lanzar automáticamente visualization.py
+    visualization_process = subprocess.Popen(["python", "Result.py"])
+
     num_implements = int(num_implements_entry.get())
     num_tasks = int(num_tasks_entry.get())
     num_vehicles = int(num_vehicles_entry.get())
@@ -85,10 +89,10 @@ def run_optimization():
     os.chdir(dir)
     Implements, Tasks, Vehicles = Data.PositionData(num_implements, num_tasks, num_vehicles, set_data)
     os.chdir(dir)
-    
+
     # Pasa las nuevas probabilidades como parámetros adicionales si es necesario
     dm.init(Implements, Tasks, Vehicles, T, num_periods, 
-            probabilityTA, probabilityTD, probabilityVA, probabilityVD, probabilityIA, probabilityID)  
+            probabilityTA, probabilityTD, probabilityVA, probabilityVD, probabilityIA, probabilityID, full, set_data)  
 
 dir = directory()
 os.chdir(dir)

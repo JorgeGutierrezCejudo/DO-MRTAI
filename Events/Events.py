@@ -30,6 +30,8 @@ class TaskEvent(Event):
             NTasks = np.random.randint(0, 100, size=(self.num,3))
             Penalty=  np.random.randint(100, 1000, size=(self.num,1))
             NTasks = np.concatenate((NTasks,Penalty),axis=1)
+            StTask=np.zeros((self.num))
+            NTasks = np.concatenate((NTasks,StTask.reshape(-1,1)),axis=1)
             return NTasks
 
 

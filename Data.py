@@ -1,226 +1,55 @@
 import numpy as np
 import pandas as pd
-import ast
 import os
-import Compatibility
-import inspect
 
+def CalculateCompMatrices (IK,IV):
+    # Calculate VK (compatibility between vehicle and task)
+    VK = (np.dot(IV.T, IK) > 0).astype(int)
 
-def GeneralgeneratedData(num_implements,num_tasks,num_vehicles,set_data,num_periods):
+    # Calculate KV (transpose of VK)
+    KV = VK.T
 
-    np.random.seed(set_data)  
-    Cst = np.random.randint(1, 100, size=(num_implements, num_tasks, num_vehicles))
-    np.random.seed(set_data+10)  
-    Cd = np.random.randint(1, 100, size=(num_implements, num_tasks, num_vehicles))
-    np.random.seed(set_data)  
-    M = np.random.randint(1, 2000, size=(num_tasks))
-    np.random.seed(set_data)  
-    T_max = np.random.randint(100,200, size=(num_vehicles)) 
-    np.random.seed(set_data)  
-    That = [np.random.randint(0.8*T_max[i], T_max[i]) for i in range(num_vehicles)]
-    That = np.array(That)
+    # Calculate KI (transpose of IK)
+    KI = IK.T
 
-    if num_periods>1:
-        Cst_pivot=Cst
-        Cd_pivot=Cd
-        M_pivot=M
+    # Calculate VI (transpose of IV)
+    VI = IV.T
 
-        for _ in range(num_periods-1):
-            Cstt = np.random.normal(loc=Cst, scale=1).astype(int)
-            Cst_pivot = np.concatenate((Cst_pivot, Cstt))
-            Cdt = np.random.normal(loc=Cd, scale=1).astype(int)
-            Cd_pivot = np.concatenate((Cd_pivot, Cdt))
-            Mt = np.random.normal(loc=M, scale=1).astype(int)
-            M_pivot = np.concatenate((M_pivot, Mt))
-
-        Cst=Cst_pivot.reshape(num_periods,num_implements,num_tasks,num_vehicles)
-        Cd=Cd_pivot.reshape(num_periods,num_implements,num_tasks,num_vehicles)
-        M=M_pivot.reshape(num_periods,num_tasks)
-
+    return VK,KV,VI,KI
     
-    return Cst,Cd,M,That,T_max
+    
 
-
-
-
-def CostData(num_implements,num_tasks,num_vehicles,set_data,num_periods,CostBalance):
-    os.chdir("Data/Costs/")
-    I=range(num_implements)
-    V=range(num_vehicles)
-    K=range(num_tasks)
-    directory_path="Parameters-("+str(num_implements)+","+str(num_tasks)+","+str(num_vehicles)+","+str(num_periods)+")-"+str(set_data)
-    if os.path.exists(directory_path):
-        os.chdir(directory_path)
-        Cst = np.loadtxt('Cst.csv', delimiter=',', dtype=int).reshape(num_periods,num_implements, num_tasks, num_vehicles)
-        Cd = np.loadtxt('Cd.csv', delimiter=',', dtype=int).reshape(num_periods,num_implements, num_tasks, num_vehicles)
-        M = np.loadtxt('M.csv', delimiter=',', dtype=int)
-        T_max = np.loadtxt('T_max.csv', delimiter=',', dtype=int)
-        That = np.loadtxt('T.csv', delimiter=',', dtype=int)
-
-        C=(CostBalance[0]*Cst+CostBalance[1]*Cd).astype(int)
-        C_reshaped = C.reshape(-1, num_vehicles)
-        pd.DataFrame(C_reshaped).to_csv('C.csv', index=False, header=False)
-
-        if num_periods==1:
-            C=C[0]
-            Cmax=1
-            Mmax=sum(M[k] for k in K)
-        else:
-            Cmax=1
-            Mmax=sum(M[0][k] for k in K for t in range(num_periods))
-
-    else:
-        os.makedirs(directory_path)
-        os.chdir(directory_path)
-        Cst,Cd,M,That,T_max=GeneralgeneratedData(num_implements,num_tasks,num_vehicles,set_data,num_periods)
-
-        Cst_reshaped = Cst.reshape(-1, num_vehicles)
-        Cd_reshaped = Cd.reshape(-1, num_vehicles)
-        M_reshaped = M.reshape(num_periods, -1)
-        T_max_reshaped = T_max.reshape(1, -1)
-        That_reshaped = np.array(That).reshape(1, -1)
-
-        # Guardar en archivos CSV
-        pd.DataFrame(Cst_reshaped).to_csv('Cst.csv', index=False, header=False)
-        pd.DataFrame(Cd_reshaped).to_csv('Cd.csv', index=False, header=False)
-        pd.DataFrame(M_reshaped).to_csv('M.csv', index=False, header=False)
-        pd.DataFrame(T_max_reshaped).to_csv('T_max.csv', index=False, header=False)
-        pd.DataFrame(That_reshaped).to_csv('T.csv', index=False, header=False)
-
-
-        C=(CostBalance[0]*Cst+CostBalance[1]*Cd).astype(int)
-
-        C=(CostBalance[0]*Cst+CostBalance[1]*Cd).astype(int)
-        C_reshaped = C.reshape(-1, num_vehicles)
-        pd.DataFrame(C_reshaped).to_csv('C.csv', index=False, header=False)
-
-        if num_periods==1:
-            Cmax=1
-            Mmax=sum(M[k] for k in K)
-        else:
-            Cmax=1
-            Mmax=sum(M[0][k] for k in K for t in range(num_periods))
-
-
-    return C, M, That, I, K, V, Mmax, Cmax,T_max
-
-def CompatibilityData(num_implements,num_tasks,num_vehicles,full,I,K,V):
+def CompatibilityData(num_implements,num_tasks,num_vehicles,full,set_data):
     os.chdir("Data/Compatibility/")
+    directory_path="Compatibility-("+str(num_implements)+","+str(num_tasks)+","+str(num_vehicles)+")"
     if full==True:        
-        KI = [[i for i in range(len(K))] for _ in range(len(I))]
-        IK = [[i for i in range(len(I))] for _ in range(len(K))]
-        IV = [[i for i in range(len(I))] for _ in range(len(V))]
-        VI = [[i for i in range(len(V))] for _ in range(len(I))]
-        KV = [[i for i in range(len(K))] for _ in range(len(V))]
-        VK = [[i for i in range(len(V))] for _ in range(len(K))]
+        IV = np.ones((num_implements, num_vehicles)) 
+        IK = np.ones((num_implements, num_tasks)) 
+        VK,KV,VI,KI=CalculateCompMatrices(IK,IV)
 
     else:
-        with open("CompData-"+str(num_implements)+","+str(num_tasks)+","+str(num_vehicles)+".txt", 'r') as file:
-            IK=ast.literal_eval(file.readline())
-            KI =ast.literal_eval(file.readline())
-            # KI,IV,KV,VK=Compatibility.CompleteCompatibility(num_implements,num_tasks,num_vehicles,IK,VI)
-            IV=ast.literal_eval(file.readline())
-            VI=ast.literal_eval(file.readline())
-            KV=ast.literal_eval(file.readline())
-            VK=ast.literal_eval(file.readline())
-    return IK,KI,IV,VI,KV,VK
+        if os.path.exists(directory_path):
 
+            os.chdir(directory_path)
+            IK=np.loadtxt('IK.csv', delimiter=',', dtype=int)
+            IV =np.loadtxt('IV.csv', delimiter=',', dtype=int)        
+            VK,KV,VI,KI=CalculateCompMatrices(IK,IV)
 
-def SpecificData(get_model_inputs,set_data,num_vehicles,gamma,num_implements,num_tasks,num_periods,EnergyBalance):
-    Specific = {}
-
-    if "gamma" in get_model_inputs:
-        Specific["gamma"] = gamma
-    if "T_max" in get_model_inputs:
-        np.random.seed(set_data) 
-        T_max = np.random.randint(100,200, size=(num_vehicles)).astype(int)
-        Specific["T_max"] = T_max
-    if "Tmax" in get_model_inputs:
-        Tmax =sum(T_max[v] for v in range(num_vehicles))
-        Specific["Tmax"] = Tmax
-    if "b" in get_model_inputs:
-        os.chdir("Data/Costs/")
-        directory_path="Parameters-("+str(num_implements)+","+str(num_tasks)+","+str(num_vehicles)+","+str(num_periods)+")-"+str(set_data)
-        os.chdir(directory_path)
-        try: 
-            bst=np.loadtxt('bst.csv', delimiter=',', dtype=int).reshape(num_periods,num_implements, num_tasks, num_vehicles)
-            bd=np.loadtxt('bd.csv', delimiter=',', dtype=int).reshape(num_periods,num_implements, num_tasks, num_vehicles)
-            if num_periods==1:
-                bst = bst[0]
-                bd = bd[0]
-            b=(EnergyBalance[0]*bst+EnergyBalance[1]*bd).astype(int)
-            b_reshaped=b.reshape(-1, num_vehicles)
-            pd.DataFrame(b_reshaped).to_csv('b.csv', index=False, header=False)
-        except:
+        else:
             np.random.seed(set_data)
-            bst = np.random.randint(1, 20, size=(num_implements, num_tasks, num_vehicles))
-            bd = np.random.randint(1, 20, size=(num_implements, num_tasks, num_vehicles))
-            if num_periods>1:
-                bst_pivot=bst
-                bd_pivot=bd
+            IK = np.random.randint(0, 2, size=(num_implements, num_tasks))  # Implements x Tasks
+            IV = np.random.randint(1, 2, size=(num_implements, num_vehicles))  # Implements x Vehicles
+            os.makedirs(directory_path)
+            os.chdir(directory_path)
+            VK,KV,VI,KI=CalculateCompMatrices(IK,IV)
+            pd.DataFrame(IK).to_csv('IK.csv', index=False, header=False)
+            pd.DataFrame(IV).to_csv('IV.csv', index=False, header=False)
+            pd.DataFrame(VK).to_csv('VK.csv', index=False, header=False)
 
-                for _ in range(num_periods-1):
-                    bstt = np.random.normal(loc=bst, scale=1).astype(int)
-                    bst_pivot = np.concatenate((bst_pivot, bstt))
-                    bdt = np.random.normal(loc=bd, scale=1).astype(int)
-                    bd_pivot = np.concatenate((bd_pivot, bdt))
 
-                bst=bst_pivot.reshape(num_periods,num_implements,num_tasks,num_vehicles)
-                bd=bd_pivot.reshape(num_periods,num_implements,num_tasks,num_vehicles)
-        
-            bst_reshaped = bst.reshape(-1, num_vehicles)
-            bd_reshaped = bd.reshape(-1, num_vehicles)
 
-            pd.DataFrame(bst_reshaped).to_csv('bst.csv', index=False, header=False)
-            pd.DataFrame(bd_reshaped).to_csv('bd.csv', index=False, header=False)    
-            b=(EnergyBalance[0]*bst+EnergyBalance[1]*bd).astype(int)
-            b_reshaped=b.reshape(-1, num_vehicles)
-            pd.DataFrame(b_reshaped).to_csv('b.csv', index=False, header=False)
-        Specific["b"] = b
-    if "Tau" in get_model_inputs:
-        Tau = range(num_periods)
-        Specific["Tau"] = Tau
-    if "Vhat" in get_model_inputs:
-        Vhat = Ihat = np.ones((num_periods,num_vehicles)).astype(int)
-        Specific["Vhat"] = Vhat
-    if "Ihat" in get_model_inputs:
-        Ihat = np.ones((num_periods,num_implements)).astype(int)
-        Specific["Ihat"] = Ihat
-    if "Khat" in get_model_inputs:
-        Khat = np.ones((num_periods,num_tasks),dtype=int).astype(int)
-        Khat[1:num_periods][:]=0
-        Specific["Khat"] = Khat
-    if "r" in get_model_inputs:
-        np.random.seed(set_data)
-        r= np.random.randint(20, 100, size=(num_implements, num_tasks))
-        Specific["r"] = r
-    if "d" in get_model_inputs:
-        np.random.seed(set_data)
-        d= np.random.randint(1, 30, size=(num_periods,num_tasks))
-        Specific["d"] = d
-    if "Cprime" in get_model_inputs:
-        try:
-            Cprime = np.loadtxt('Cprime.csv', delimiter=',', dtype=int).reshape(num_periods,num_vehicles)
-            if num_periods==1:
-                Cprime = Cprime[0]
-        except:
-            np.random.seed(set_data+20)
-            Cprime = np.random.randint(1, 100, size=(num_periods,num_vehicles))
-            Cprime_reshaped = Cprime.reshape(-1, num_vehicles)
-            pd.DataFrame(Cprime_reshaped).to_csv('Cprime.csv', index=False, header=False)
-            if num_periods==1:
-                Cprime = Cprime[0]
-        Specific["Cprime"] = Cprime
-    if "Tmin" in get_model_inputs:
-        Tmin = 15
-        Specific["Tmin"] = Tmin
-    # if "Cmaxpri" in get_model_inputs:
-    #     if num_periods==1:
-    #         Cmaxpri = sum(Cprime[v] for v in range(num_vehicles))
-    #     else:
-    #         Cmaxpri = np.max(Cprime)*num_vehicles
-    #     Specific["Cmaxpri"] = Cmaxpri
-    return Specific
+
+    return IK,KI,IV,VI,KV,VK
 
 def PositionData(num_implements,num_tasks,num_vehicles,set_data):
 
@@ -235,21 +64,21 @@ def PositionData(num_implements,num_tasks,num_vehicles,set_data):
         os.makedirs(directory_path)
         os.chdir(directory_path)
         np.random.seed(set_data)
-        Implements = np.random.randint(0, 20, size=(num_implements,2))
+        Implements = np.random.randint(0, 100, size=(num_implements,2))
         np.random.seed(set_data)
         EfImplement=  np.random.randint(80, 100, size=(num_implements,1))
         StImplement=np.zeros((num_implements))
         Implements = np.concatenate((Implements,EfImplement/100),axis=1)
         Implements = np.concatenate((Implements,StImplement.reshape(-1,1)),axis=1)
         np.random.seed(set_data+10)
-        Tasks = np.random.randint(0, 20, size=(num_tasks,3))
+        Tasks = np.random.randint(0, 100, size=(num_tasks,3))
         np.random.seed(set_data+12)
         Penalty=  np.random.randint(100, 1000, size=(num_tasks,1))
         Tasks = np.concatenate((Tasks,Penalty),axis=1)
         StTask=np.zeros((num_tasks))
         Tasks = np.concatenate((Tasks,StTask.reshape(-1,1)),axis=1)
         np.random.seed(set_data+20)
-        Vehicles = np.random.randint(0, 20, size=(num_vehicles,2))
+        Vehicles = np.random.randint(0, 100, size=(num_vehicles,2))
         np.random.seed(set_data+20)
         EfVehicle=  np.random.randint(80, 100, size=(num_vehicles,1))
         Vehicles = np.concatenate((Vehicles,EfVehicle/100),axis=1)
