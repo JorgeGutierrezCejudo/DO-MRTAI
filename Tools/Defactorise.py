@@ -34,7 +34,6 @@ def TEXAsignmentsDefactorise(Asignments):
             A_tasks.append(int(j))
             A_vehicles.append(int(k))
             A_periods.append(int(t))
-
     return A_implements, A_tasks, A_vehicles, A_periods
 
 def TEZAsignmentsDefactorise(Asignments):

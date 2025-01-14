@@ -53,13 +53,19 @@ def PrimeCalculation(num_implements,num_tasks,num_vehicles,Implements,Tasks,Vehi
     return Cprime
 
 def NormalicedCalculation(num_periods, M,I,K,V,c_ikv, c_v0_prime):
-    max_cikv=np.zeros(len(V))
-    Cmax=np.zeros(len(V))
-    for v in V:
-        max_cikv[v] = max(c_ikv[i, k, v] for i in I for k in K)
-        Cmax[v] = max(max_cikv[v], c_v0_prime[v])
 
-    Mmax = sum(M[k] for k in K)
+    if num_periods<=1:
+        max_cikv=np.zeros(len(V))
+        Cmax=np.zeros(len(V))
+        for v in V:
+            max_cikv[v] = max(c_ikv[i, k, v] for i in I for k in K)
+            Cmax[v] = max(max_cikv[v], c_v0_prime[v])
+
+        Mmax = sum(M[k] for k in K)
+    else:
+        Cmax = 4
+        Mmax=sum(M[0][k] for k in K for t in range(num_periods))
+                
 
     return Cmax, Mmax
 

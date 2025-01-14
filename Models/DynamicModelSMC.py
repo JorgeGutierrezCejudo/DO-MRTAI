@@ -7,9 +7,12 @@ import os
 
 
 def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,T_max,b,Tau,Vhat,Ihat,Khat,Cprime,Tmin):
-    Cmax = np.random.randint(0,1,size=len(V))
+    Cmax = [0] * len(V)
     for v in V:
-        Cmax[v]=sum(Vhat[t,v]*max(Cprime[t,v],np.max(C[t,:,:,v])) for t in Tau)
+        Cmax[v] = sum(
+            Vhat[t, v] * max(Cprime[t, v], np.max(C[t, :, :, v])) for t in Tau
+        )
+
       
     #Model definition
     model = Model('3index-assignment-1')
@@ -20,8 +23,7 @@ def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,T_max,b,
     # ------------------------------------ Decision Variables definitions 
     #Decision variables
     x = {(i,k,v,t):model.addVar(vtype=GRB.BINARY, name="x_" + str(i) + "_" + str(k) + "_" + str(v)+ "_" + str(t)) 
-                    for i in I for k in K for v in V for t in Tau
-            }
+                    for i in I for k in K for v in V for t in Tau if IK[i, k] == 1 and IV[i, v] == 1 and VK[v, k] == 1}
 
     y = {(k,t): model.addVar(vtype=GRB.BINARY, name="y_" + str(k)+ "_" + str(t))
                     for k in K for t in Tau
@@ -35,25 +37,35 @@ def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,T_max,b,
 
 
     #Objective function
-    obj =(alpha) * quicksum( ((quicksum(C[t][i][k][v] * x[i, k, v, t] + Cprime[t][v]* z[v,t] for i in I for k in K for t in Tau))/(Cmax[v])) for v in V) \
-        + (beta/(Mmax)) * quicksum(M[t][k] * (o[k,t] - y[k,t]) for k in K for t in Tau)
+    obj = (alpha) * quicksum(
+        quicksum(
+            quicksum(
+                C[t][i][k][v] * x[i, k, v, t]
+                for i in I for k in K if (i, k, v, t) in x
+            ) + Cprime[t][v] * z[v, t]
+            for t in Tau
+        ) / (Cmax[v])
+        for v in V
+    ) + (beta / (Mmax)) * quicksum(
+        M[t][k] * (o[k, t] - y[k, t]) for k in K for t in Tau
+)
 
     model.setObjective(obj, GRB.MINIMIZE) 
 
     #Constraints 31: at most 1 implement for task-vehicle 
     for i in I:
         for t in Tau:
-            model.addConstr(quicksum(x[i, k, v,t] for k in KI[i] for v in VI[i]) <= Ihat[t][i])
+            model.addConstr(quicksum(x[i, k, v,t] for k in K for v in V if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1) <= Ihat[t][i])
     
     #Constraints 33: at most 1 task for implement-vehicle
     for k in K:
         for t in Tau:
-            model.addConstr(quicksum(x[i, k, v,t] for i in IK[k] for v in VK[k]) == y[k,t])
+            model.addConstr(quicksum(x[i, k, v,t] for i in I for v in V if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1) == y[k,t])
 
     #Constraints 32: vehicle assignment to depot or task-implement
     for v in V:
         for t in Tau:
-            model.addConstr(z[v,t] + quicksum(x[i, k, v, t] for i in IV[v] for k in KV[v]) == Vhat[t][v])
+            model.addConstr(z[v,t] + quicksum(x[i, k, v, t] for i in I for k in K if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1) == Vhat[t][v])
 
     for v in V:
         for t in Tau:
@@ -79,12 +91,12 @@ def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,T_max,b,
     #Constraints 37: vehicle autonomy the rest of the time inferior limit
     for v in V:
         for t in range(len(Tau) - 1):
-            model.addConstr(T[v,t + 1] >= T[v,t] - quicksum((b[t][i][k][v]) * x[i, k, v, t] for i in IV[v] for k in KV[v]))
+            model.addConstr(T[v,t + 1] >= T[v,t] - quicksum((b[t][i][k][v]) * x[i, k, v, t] for i in I for k in K if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1))
 
     #Constraints 38: vehicle autonomy the rest of the time superior limit
     for v in V:
         for t in range(len(Tau) - 1):
-            model.addConstr(T[v,t + 1] <= T[v,t] - quicksum((b[t][i][k][v]) * x[i, k, v, t] for i in IV[v] for k in KV[v]) + T_max[v] * z[v,t])
+            model.addConstr(T[v,t + 1] <= T[v,t] - quicksum((b[t][i][k][v]) * x[i, k, v, t] for i in I for k in K if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1) + T_max[v] * z[v,t])
 
     #Constraints 39: vehicle autonomy relation between 37-38
     for v in V:
@@ -110,7 +122,21 @@ def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,T_max,b,
 
 ########################################################### DYNAMIC INSTANCE ############################################################################################################
 
+# def CalculateCompMatrices (IK,IV):
+#     # Calculate VK (compatibility between vehicle and task)
+#     VK = (np.dot(IV.T, IK) > 0).astype(int)
 
+#     # Calculate KV (transpose of VK)
+#     KV = VK.T
+
+#     # Calculate KI (transpose of IK)
+#     KI = IK.T
+
+#     # Calculate VI (transpose of IV)
+#     VI = IV.T
+
+#     return VK,KV,VI,KI
+    
 # CostBalance = [1,0.01]
 # EnergyBalance = [1,0.2]
 # GlobalResults={}
@@ -119,7 +145,7 @@ def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,T_max,b,
 # num_tasks=6
 # num_vehicles=3
 # set_data=1
-# os.chdir("Data/Costs")
+# full=True
 # directory_path="Parameters-("+str(num_implements)+","+str(num_tasks)+","+str(num_vehicles)+","+str(num_periods)+")-"+str(set_data)
 # print("Running optimization for", num_implements, "implements,", num_tasks, "tasks and", num_vehicles, "vehicles.")
 
@@ -232,12 +258,30 @@ def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,T_max,b,
 #     Cmax=1
 #     Mmax=sum(M[0][k] for k in K for t in range(num_periods))
 
-# KI =[[i for i in range(num_tasks)] for _ in range(num_implements)]
-# IK=[[i for i in range(num_implements)] for _ in range(num_tasks)]
-# IV=[[i for i in range(num_implements)] for _ in range(num_vehicles)]
-# VI=[[i for i in range(num_vehicles)] for _ in range(num_implements)]
-# KV=[[i for i in range(num_tasks)] for _ in range(num_vehicles)]
-# VK=[[i for i in range(num_vehicles)] for _ in range(num_tasks)]
+# directory_path="Compatibility-("+str(num_implements)+","+str(num_tasks)+","+str(num_vehicles)+")"
+# if full==True:        
+#     IV = np.ones((num_implements, num_vehicles)) 
+#     IK = np.ones((num_implements, num_tasks)) 
+#     VK,KV,VI,KI=CalculateCompMatrices(IK,IV)
+
+# else:
+#     if os.path.exists(directory_path):
+
+#         os.chdir(directory_path)
+#         IK=np.loadtxt('IK.csv', delimiter=',', dtype=int)
+#         IV =np.loadtxt('IV.csv', delimiter=',', dtype=int)        
+#         VK,KV,VI,KI=CalculateCompMatrices(IK,IV)
+
+#     else:
+#         np.random.seed(set_data)
+#         IK = np.random.randint(0, 2, size=(num_implements, num_tasks))  # Implements x Tasks
+#         IV = np.random.randint(1, 2, size=(num_implements, num_vehicles))  # Implements x Vehicles
+#         os.makedirs(directory_path)
+#         os.chdir(directory_path)
+#         VK,KV,VI,KI=CalculateCompMatrices(IK,IV)
+#         pd.DataFrame(IK).to_csv('IK.csv', index=False, header=False)
+#         pd.DataFrame(IV).to_csv('IV.csv', index=False, header=False)
+#         pd.DataFrame(VK).to_csv('VK.csv', index=False, header=False)
 # alpha,beta,=0.5,0.5
 # gamma=0
 
@@ -280,6 +324,7 @@ def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,T_max,b,
 # #         variables_count['z'] += 1
     
 # # print(variables_count)
+# modelo.write("modelo.lp")
 # all_vars = modelo.getVars()
 # values = modelo.getAttr("X", all_vars)
 # names = modelo.getAttr("VarName", all_vars)

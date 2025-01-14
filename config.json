@@ -1,1 +1,1 @@
-{"num_implements": "12", "num_tasks": "10", "num_vehicles": "5", "seed": "1", "full": true, "time_horizon": "200", "num_periods": "1", "probabilityTA": "0", "probabilityTD": "0", "probabilityVA": "0", "probabilityVD": "0", "probabilityIA": "0", "probabilityID": "0"}
+{"num_implements": "10", "num_tasks": "40", "num_vehicles": "5", "seed": "4", "full": true, "time_horizon": "200", "num_periods": "1", "probabilityTA": "0", "probabilityTD": "0", "probabilityVA": "0", "probabilityVD": "0", "probabilityIA": "0", "probabilityID": "0"}

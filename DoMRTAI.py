@@ -5,9 +5,8 @@ import Data as dt
 from View import StView as vw
 from View import TEView as tew
 from View import Movement as mv
-from View import TEMovement as temv
 from Models import StaticModelSMC as sm
-from Models import DynamicModel as dm
+from Models import DynamicModelSMC as dm
 import os
 import Cost as ct
 import Preprocessing as pp
@@ -54,7 +53,7 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
     totalDistancia = np.ones((len(Vehicles)),dtype=float)
     Distancia=np.ones((len(Vehicles)),dtype=float)
     T_max=Vehicles[:,3]
-    CostBalance = [1,1]
+    CostBalance = [0,1]
     alpha,beta=0.05,0.95
     EnergyBalance = [1,1]
     Tmin=5
@@ -81,7 +80,8 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
 
 
 
-            Vhat = Ihat = np.ones((num_periods,num_vehicles)).astype(int)
+            Vhat =  np.ones((num_periods,num_vehicles)).astype(int)
+            Ihat =  np.ones((num_periods,num_implements)).astype(int)
             Khat = np.ones((num_periods,num_tasks),dtype=int).astype(int)
             Khat[1:num_periods][:]=0
             num_implements = len(Implements)
@@ -158,7 +158,6 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
                                 ZAsignments[name] = val
                 Error=0
                 # Error,Cd=rc.RealCost(XAsignments,Implements,Tasks,Vehicles,Cd,client)
-               
                     
 
             #Visualization
@@ -171,10 +170,9 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
         
   
         if Event[0]==False: 
-            if num_periods<=1:
-                Event,Vehicles,Implements,Tasks,AssignmentT,tmo,Distancia,totalDistancia=mv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA,0,totalDistancia)
-            else:
-                Event,Implements,Tasks,Vehicles=temv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA)
+            Event,Vehicles,Implements,Tasks,AssignmentT,tmo,Distancia,totalDistancia=mv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA,0,totalDistancia,num_periods)
+
+        print(AssignmentT)
         
 
         #Postprocessing:
