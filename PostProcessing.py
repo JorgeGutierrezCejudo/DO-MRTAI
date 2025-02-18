@@ -23,18 +23,30 @@ def TrueObj(Distancia, TaskNotDone, t, M,InfoTaskDone):
 
 
 
-
-
-def AssignmentDone (AssignmentT,t,InfoTaskDone,M):
-    try:
+def AssignmentDone (AssignmentT,t,InfoTaskDone,M,depot_info):
+    if AssignmentT or depot_info:
+        print("Dentro")
         Assigment={}
-        Assigment['x_'+str(AssignmentT[0][0])+"_"+str(AssignmentT[0][1])+"_"+str(AssignmentT[0][2])]=1
-        task_info = {
-        "Penalty": M[AssignmentT[0][1]],
-        "Time": t
-        }
-        InfoTaskDone.append(task_info)
-        return Assigment,InfoTaskDone
-    except:
-        return None,InfoTaskDone
+        ZAssigment={}
+        for i in range(len(AssignmentT)):
+            key = 'x_' + str(AssignmentT[i][0]) + "_" + str(AssignmentT[i][1]) + "_" + str(AssignmentT[i][2]) + "_" + str(AssignmentT[i][3])
+            Assigment[key] = 1 
+            try: 
+                task_info = {
+                "Penalty": M[AssignmentT[i][3]][AssignmentT[i][1]],
+                "Time": t
+                }
+            except:
+                task_info = {
+                "Penalty": M[AssignmentT[i][1]],
+                "Time": t
+                }
+
+            InfoTaskDone.append(task_info)
+        for i in range (len(depot_info)):
+            key='z_'+str(depot_info[0][0])+"_"+str(depot_info[0][1])
+            ZAssigment[key]=1
+        return Assigment,InfoTaskDone,ZAssigment
+    else:
+        return None,InfoTaskDone,None
 

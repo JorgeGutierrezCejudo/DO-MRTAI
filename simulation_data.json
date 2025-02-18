@@ -1,70 +1,50 @@
 [
     [
+        "Battery of vehicule 0",
+        6
+    ],
+    [
         "Battery of vehicule 1",
-        86
-    ],
-    [
-        "Battery of vehicule 2",
-        90
-    ],
-    [
-        "Battery of vehicule 3",
-        76
-    ],
-    [
-        "Battery of vehicule 4",
-        71
-    ],
-    [
-        "Battery of vehicule 5",
-        81
+        5
     ],
     [
         "Distance of vehicule 1",
-        48
+        268
     ],
     [
         "Distance of vehicule 2",
-        147
-    ],
-    [
-        "Distance of vehicule 3",
-        63
-    ],
-    [
-        "Distance of vehicule 4",
-        88
-    ],
-    [
-        "Distance of vehicule 5",
-        23
+        268
     ],
     [
         "Elapsed time",
-        37.07880973815918
+        43.333
+    ],
+    [
+        "Elapsed time of optimization",
+        0.02293
     ],
     [
         "Cost of penalty of task do not finish",
-        7986.034041404724
+        4098.902
     ],
     [
         "Cost of task done",
-        1731.838918786049
+        1576.141
     ],
     [
         "Cost of distance",
-        7.192188872595696
+        106.737
     ],
     [
         "Total objective value (this iteration)",
-        9725.065149063368
+        5781.781
     ],
     [
         "Total objective value",
-        10124.672749176725
+        6211.425
     ],
     [
         "Number of events",
-        8
+        10
     ]
 ]

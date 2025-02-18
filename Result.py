@@ -1,40 +1,84 @@
 import tkinter as tk
 from tkinter import ttk
+from PIL import Image, ImageTk
 import json
 
-# Archivo donde se almacenarán los datos
 DATA_FILE = "simulation_data.json"
 
 class VisualizationWindow:
     def __init__(self, root):
         self.root = root
         self.root.title("Simulation Events Data")
-
-        # Configurar el tamaño inicial de la ventana
-        self.root.geometry("800x600")  # Ancho x Alto
-
-        # Crear un estilo para mejorar la apariencia
+        self.root.geometry("900x600")  # Width x Height
+        
+        # Crear un estilo mas neutral
         style = ttk.Style()
-        style.configure("Treeview", font=("Arial", 14))  # Fuente de los datos
-        style.configure("Treeview.Heading", font=("Arial", 16, "bold"))  # Fuente de los encabezados
+        style.theme_use("clam")  # Usar un tema moderno
+        style.configure("Treeview",
+                        font=("Roboto", 12),
+                        background="#f9f9f9",
+                        foreground="#333",
+                        rowheight=30,
+                        fieldbackground="#f9f9f9")
+        style.configure("Treeview.Heading",
+                        font=("Roboto", 14, "bold"),
+                        background="#cccccc",
+                        foreground="black")
+        style.map("Treeview", background=[("selected", "#cccccc")], foreground=[("selected", "black")])
+
+        # Encabezado con logos
+        header_frame = tk.Frame(root, bg="white")
+        header_frame.pack(fill=tk.X)
+
+        # Logo 1
+        logo1_image = Image.open("URJC-Logo.png")
+        logo1_image = logo1_image.resize((192, 108), Image.ANTIALIAS)
+        logo1_photo = ImageTk.PhotoImage(logo1_image)
+        logo1_label = tk.Label(header_frame, image=logo1_photo, bg="white")
+        logo1_label.image = logo1_photo
+        logo1_label.pack(side=tk.LEFT, padx=10, pady=5)
+
+        # Titulo
+        title_label = tk.Label(header_frame, text="Simulation Events", font=("Roboto", 20, "bold"), bg="white", fg="black")
+        title_label.pack(side=tk.LEFT, expand=True, padx=10)
+
+        # Logo 2
+        logo2_image = Image.open("Logo-Universita-Roma-Tor-Vergata.png")
+        logo2_image = logo2_image.resize((192, 50), Image.ANTIALIAS)
+        logo2_photo = ImageTk.PhotoImage(logo2_image)
+        logo2_label = tk.Label(header_frame, image=logo2_photo, bg="white")
+        logo2_label.image = logo2_photo
+        logo2_label.pack(side=tk.RIGHT, padx=10, pady=5)
+
+        # Crear un marco para la tabla
+        frame = ttk.Frame(root)
+        frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
 
         # Tabla para mostrar los datos
-        self.tree = ttk.Treeview(root, columns=("Description", "Value"), show="headings", height=20)
+        self.tree = ttk.Treeview(frame, columns=("Description", "Value"), show="headings")
         self.tree.heading("Description", text="Description")
         self.tree.heading("Value", text="Value")
-        self.tree.column("Description", anchor="center", width=400)  # Ancho de la columna
+        self.tree.column("Description", anchor="center", width=450)
         self.tree.column("Value", anchor="center", width=300)
-        self.tree.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
 
-        # Botón para cerrar la ventana
+        # Barra de desplazamiento
+        scrollbar = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=self.tree.yview)
+        self.tree.configure(yscroll=scrollbar.set)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.tree.pack(fill=tk.BOTH, expand=True)
+
         self.close_button = ttk.Button(root, text="Close", command=root.destroy, style="TButton")
-        self.close_button.grid(row=1, column=0, padx=20, pady=10)
+        self.close_button.pack(pady=10)
 
-        # Configurar filas y columnas para expandirse
-        root.grid_rowconfigure(0, weight=1)
-        root.grid_columnconfigure(0, weight=1)
+        style.configure("TButton",
+                        font=("Roboto", 12, "bold"),
+                        background="#b3b3b3",
+                        foreground="black",
+                        padding=10)
+        style.map("TButton",
+                   background=[("active", "#999999")])
 
-        # Iniciar la actualización de datos
+        # Actualizar datos en la tabla
         self.update_data()
 
     def update_data(self):
@@ -52,7 +96,7 @@ class VisualizationWindow:
                 self.tree.insert("", "end", values=row)
 
         except (FileNotFoundError, json.JSONDecodeError):
-            pass  # Ignorar errores iniciales si el archivo no está listo aún
+            pass  
 
         # Actualizar los datos cada 500 ms
         self.root.after(500, self.update_data)

@@ -39,6 +39,7 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
     InfoTaskDone=[]
     data=1
     t=0
+    toptimization=0
     Obj=0
     CostPenaltyRest=0
     DoneAsignationCost=0
@@ -56,7 +57,7 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
     CostBalance = [0,1]
     alpha,beta=0.05,0.95
     EnergyBalance = [1,1]
-    Tmin=5
+    Tmin=0
     num_vehicles = len(Vehicles)
     dir=os.getcwd()
     EventLogger=EVlogger.EventLogger()
@@ -113,7 +114,6 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
             os.chdir(dir)
             IK,KI,IV,VI,KV,VK=dt.CompatibilityData(num_implements,num_tasks,num_vehicles,full,set_data)
             os.chdir(dir)
-            
             #Optimization model
             Error=10
             while Error>5:
@@ -127,12 +127,11 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
 
                 os.chdir(dir)
                 #modelo.write("model"+str(i)+".lp")
+                if modelo.Status == GRB.Status.INFEASIBLE:
+                    print("The model is infeasible. Stopping optimization.")
+                    modelo.write("infeasible_model.ilp")  # Save the model for analysis
+                    break
                 try: 
-                    if modelo.Status == GRB.Status.INFEASIBLE:
-                        print("The model is infeasible. Stopping optimization.")
-                        modelo.write("infeasible_model.ilp")  # Save the model for analysis
-                        input()  # Wait for the user to press Enter
-                        break
                     all_vars = modelo.getVars()
                     tprime=modelo.getAttr("Runtime")
                     values = modelo.getAttr("X", all_vars)
@@ -166,22 +165,18 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
             # else:
             #     tew.init(num_implements,num_tasks,num_vehicles,Implements,Tasks,Vehicles,XAsignments,M,num_periods,ZAsignments,TAsignments)
             os.chdir(dir)
-            t=t+tprime
-        
+            toptimization=toptimization+tprime
+
   
         if Event[0]==False: 
-            Event,Vehicles,Implements,Tasks,AssignmentT,tmo,Distancia,totalDistancia=mv.animate_allocation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA,0,totalDistancia,num_periods)
-
-        print(AssignmentT)
-        
-
+            Event,Vehicles,Implements,Tasks,AssignmentT,depot_info,tmo,Distancia,totalDistancia=mv.custom_animation(Implements, Tasks, Vehicles, XAsignments,ZAsignments,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA,0,totalDistancia,num_periods)
         #Postprocessing:
         t=t+(tmo)
         if Event[0]:  
-            XAsignments,InfoTaskDone=pop.AssignmentDone(AssignmentT,t,InfoTaskDone,M)
-            if num_periods<=1:
+            XAsignments,InfoTaskDone,ZAsignments=pop.AssignmentDone(AssignmentT,t,InfoTaskDone,M,depot_info)
+            try:
                 Implements,Tasks,Vehicles,M,That=pp.UpdateInfoST(XAsignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,T_max,Distancia)
-            else:
+            except:
                 Implements,Tasks,Vehicles,M,That=pp.UpdateInfoTE(XAsignments,Implements,Tasks,Vehicles,M,That,num_periods,ZAsignments,b,T_max,TAsignments,num_vehicles)
             
         Obj=Obj-CostPenaltyRest-DoneAsignationCost
@@ -213,6 +208,7 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
                 EventLogger.log_event(EventProcess)
                 if Event[2]==2:
                     That=SimulationOutput[0]
+                    Vehicles[:,4]=That
                     T_max=SimulationOutput[1]
             else:
                 print("Error: EVENT NOT FOUND")
@@ -222,17 +218,18 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
         Obj_prime=CostPenaltyRest+CostDistance_prime+DoneAsignationCost
         Obj+=Obj_prime
 
-        That_list = [[f"Battery of vehicule {i+1}", int(That[i])] for i in range(num_vehicles)]
+        That_list = [[f"Battery of vehicule {i}", int(That[i])] for i in range(num_vehicles)]
         Distancia_list = [[f"Distance of vehicule {i+1}", int(totalDistancia[i])] for i in range(num_vehicles)]
         summary_data = [
             *That_list,
             *Distancia_list,
-            ["Elapsed time", t],
-            ["Cost of penalty of task do not finish", CostPenaltyRest],
-            ["Cost of task done", DoneAsignationCost],
-            ["Cost of distance", CostDistance_prime],
-            ["Total objective value (this iteration)", Obj_prime],
-            ["Total objective value", Obj],
+            ["Elapsed time", round(t,3)],
+            ["Elapsed time of optimization", round(toptimization,5)],
+            ["Cost of penalty of task do not finish", round(CostPenaltyRest,3)],
+            ["Cost of task done", round(DoneAsignationCost,3)],
+            ["Cost of distance", round(CostDistance_prime,3)],
+            ["Total objective value (this iteration)", round(Obj_prime,3)],
+            ["Total objective value", round(Obj,3)],
             ["Number of events",Info]
         ]
 
@@ -251,6 +248,7 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
     
 
     print("El valor objetivo final es de:",Obj)
+    return t,toptimization,Obj,Distancia_list,InfoTaskDone
 
 
 

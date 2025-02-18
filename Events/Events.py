@@ -111,7 +111,7 @@ class SimulationEvent(Event):
             ZAsignments = self.SimulationInfo[0]
             That = self.SimulationInfo[1]
             Tmax = self.SimulationInfo[2]
-            A_vehiclesd =tl.ZAsignmentsDefactorise(ZAsignments)
+            A_vehiclesd,A_periods=tl.TEZAsignmentsDefactorise(ZAsignments)
             for i in range(len(A_vehiclesd)):
                 That[A_vehiclesd[i]]=Tmax[A_vehiclesd[i]]
             SimulationOutput= [That,Tmax]

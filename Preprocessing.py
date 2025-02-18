@@ -11,6 +11,7 @@ def UpdateInfoST(Asignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,Tmax,
     #     Vehicles[A_vehiclesd[i],0]=0
 
 #Update the position of the Implements,Tasks and Vehicles
+
     # for i in range(len(A_tasks)):
     #     Implements[A_implements[i],1]=Tasks[A_tasks[i],1]
     #     Vehicles[A_vehicles[i],1]=Tasks[A_tasks[i],1]
@@ -19,15 +20,21 @@ def UpdateInfoST(Asignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,Tmax,
     # for v in range(len(A_tasks)):
     #     That[A_vehicles[v]]=That[A_vehicles[v]]-b[A_implements[v],A_tasks[v],A_vehicles[v]]
 
+#Update the state of the tasks
     A_tasks=sorted(A_tasks,reverse=True)
-    for i in range(len(A_tasks)):
+    for i in range(len(A_tasks)): 
         Tasks[A_tasks[i],4]=1
 
-    for i in range (len(Vehicles)):
-        That[i] -= Distancia[i]*0.05
+    for i in range (len(A_vehicles)):   #Update the autonomy of the vehicles
+        That[A_vehicles[i]] =That[A_vehicles[i]]-b[A_implements[i],A_tasks[i],A_vehicles[i]]
         if That[i]<0:
             That[i]=0
 
+    for i in range(len(Vehicles)):
+        That[i]=That[i]-Distancia[i]*0.01
+        if That[i]<0:
+            That[i]=0
+    Vehicles[:,4]=That
 
     return Implements,Tasks,Vehicles,M,That
 
@@ -36,31 +43,36 @@ def UpdateInfoTE(Asignments,Implements,Tasks,Vehicles,M,That,num_periods,ZAsignm
     A_vehiclesd, A_periodsD = tl.TEZAsignmentsDefactorise(ZAsignments)
 
 #Update the position of the Implements,Tasks and Vehicles
-    for i in range(len(A_tasks)):
-        if A_periods[i]==max(A_periods):
-            Implements[A_implements[i],1]=Tasks[A_tasks[i],1]
-            Vehicles[A_vehicles[i],1]=Tasks[A_tasks[i],1]
-            Implements[A_implements[i],0]=Tasks[A_tasks[i],0]
-            Vehicles[A_vehicles[i],0]=Tasks[A_tasks[i],0]
+    # for i in range(len(A_tasks)):
+    #     if A_periods[i]==max(A_periods):
+    #         Implements[A_implements[i],1]=Tasks[A_tasks[i],1]
+    #         Vehicles[A_vehicles[i],1]=Tasks[A_tasks[i],1]
+    #         Implements[A_implements[i],0]=Tasks[A_tasks[i],0]
+    #         Vehicles[A_vehicles[i],0]=Tasks[A_tasks[i],0]
 
-    for i in range(len(A_vehiclesd)):
-        if A_periodsD[i]==num_periods-1:
-            That[A_vehiclesd[i]]=Tmax[A_vehiclesd[i]]
-            Vehicles[A_vehiclesd[i],1]=1
-            Vehicles[A_vehiclesd[i],0]=1
-
-
-    Tinfo=tl.TInfo(TAsignments,num_vehicles,num_periods)
-
-    for v in range(len(A_tasks)):
-        if A_periods[v]==num_periods-1:
-            That[A_vehicles[v]]=Tinfo[A_vehicles[v],num_periods-1]-b[num_periods-1,A_implements[v],A_tasks[v],A_vehicles[v]]
+    # for i in range(len(A_vehiclesd)):
+    #     if A_periodsD[i]==num_periods-1:
+    #         That[A_vehiclesd[i]]=Tmax[A_vehiclesd[i]]
+    #         Vehicles[A_vehiclesd[i],1]=1
+    #         Vehicles[A_vehiclesd[i],0]=1
+    try:
+        Tinfo=tl.TInfo(TAsignments,num_vehicles,num_periods)
+        for v in range(len(A_tasks)):
+            if A_periods[v]==num_periods-1:
+                That[A_vehicles[v]]=Tinfo[A_vehicles[v],num_periods-1]-b[num_periods-1,A_implements[v],A_tasks[v],A_vehicles[v]]
+            if That[A_vehicles[v]]<0:
+                That[A_vehicles[v]]=0
+    except: 
+        for i in range (len(A_vehicles)):   #Update the autonomy of the vehicles
+            That[A_vehicles[i]] =That[A_vehicles[i]]-b[A_implements[i],A_tasks[i],A_vehicles[i]]
+            if That[A_vehicles[i]]<0:
+                That[A_vehicles[i]]=0
 
         
     A_tasks=sorted(A_tasks,reverse=True)
     for i in range(len(A_tasks)):
-        Tasks=np.delete(Tasks,A_tasks[i],axis=0)
-        M=Tasks[:,3]
+        Tasks[A_tasks[i],4]=1
+        
 
     return Implements,Tasks,Vehicles,M,That
     
