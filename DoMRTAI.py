@@ -219,7 +219,7 @@ def init(Implements,Tasks,Vehicles,T,num_periods,probabilityTA,probabilityTD,pro
         Obj+=Obj_prime
 
         That_list = [[f"Battery of vehicule {i}", int(That[i])] for i in range(num_vehicles)]
-        Distancia_list = [[f"Distance of vehicule {i+1}", int(totalDistancia[i])] for i in range(num_vehicles)]
+        Distancia_list = [[f"Distance of vehicule {i}", round(totalDistancia[i],2)] for i in range(num_vehicles)]
         summary_data = [
             *That_list,
             *Distancia_list,

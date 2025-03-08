@@ -18,8 +18,31 @@ def toggle_pause(event):
     global paused
     paused = not paused  # Alternar entre pausa y reanudación
 
-def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles,Distancia,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA,totalDistancia,num_periods,Z_periodsD,vehicle_states):
+def CheckProbability(probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA,Event):
     global check
+    if check:
+        check=False
+        if random.random() < probabilityTA:
+            Event=[True,"Task",1]
+        #Check if a task Disappear
+        elif random.random() < probabilityTD:
+            Event=[True,"Task",2]
+        #Check if a new vehicle Appear
+        elif random.random() < probabilityVA:
+            Event=[True,"Vehicle",1]
+        #Check if a vehicle Disappear
+        elif random.random() < probabilityVD:
+            Event=[True,"Vehicle",2]
+        #Check if a new implement Appear
+        elif random.random() < probabilityIA:
+            Event=[True,"Implement",1]
+        #Check if a implement Disappear
+        elif random.random() < probabilityID:
+            Event=[True,"Implement",2]
+    
+    return Event
+
+def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles,Distancia,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA,totalDistancia,num_periods,Z_periodsD,vehicle_states):
     Event = [False, "", 0]
     Imp=False
     Depot=False
@@ -47,14 +70,7 @@ def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl,
                 dx = Implements[A_implements[i], 0] - Vehicles[A_vehicles[i], 0]
                 dy = Implements[A_implements[i], 1] - Vehicles[A_vehicles[i], 1]
                 alpha = math.atan2(dy, dx)
-
-                Vehicles[A_vehicles[i], 0] += Vl[A_vehicles[i]] * math.cos(alpha)
-                Vehicles[A_vehicles[i], 1] += Vl[A_vehicles[i]] * math.sin(alpha)
-                distance_moved= Vl[A_vehicles[i]] 
-                Distancia[A_vehicles[i]] += distance_moved
-                totalDistancia[A_vehicles[i]] += distance_moved
-
-
+            
                 # Check if the vehicle has reached the implement
                 if np.linalg.norm([dx, dy]) < Vl[A_vehicles[i]]:
                     reached_implements[A_vehicles[i]] = True
@@ -66,14 +82,8 @@ def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl,
                 dy = Tasks[A_tasks[i], 1] - Vehicles[A_vehicles[i], 1]
                 alpha = math.atan2(dy, dx)
 
-                Vehicles[A_vehicles[i], 0] += Vl[A_vehicles[i]] * math.cos(alpha)
-                Vehicles[A_vehicles[i], 1] += Vl[A_vehicles[i]] * math.sin(alpha)
                 Implements[A_implements[i], 0] = Vehicles[A_vehicles[i], 0]
                 Implements[A_implements[i], 1] = Vehicles[A_vehicles[i], 1]
-
-                distance_moved= Vl[A_vehicles[i]] 
-                Distancia[A_vehicles[i]] += distance_moved
-                totalDistancia[A_vehicles[i]] += distance_moved
 
                 # Check if the vehicle has reached the task
                 if np.linalg.norm([dx, dy]) < Vl[A_vehicles[i]]:
@@ -91,7 +101,11 @@ def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl,
                             vehicle_states[A_vehicles[i]] = vehicle_states[A_vehicles[i]]+1
                             reached_implements[A_vehicles[i]] = False
                             reached_tasks[A_vehicles[i]] = False
-                    
+            
+            Vehicles[A_vehicles[i], 0] += Vl[A_vehicles[i]] * math.cos(alpha)
+            Vehicles[A_vehicles[i], 1] += Vl[A_vehicles[i]] * math.sin(alpha) 
+            Distancia[A_vehicles[i]] += Vl[A_vehicles[i]] 
+            totalDistancia[A_vehicles[i]] += Vl[A_vehicles[i]]       
         else:
             # Move vehicle back to depot
             indiceZ = next((i for i in range(len(Z_periodsD)) if Z_periodsD[i] == vehicle_states[v] and Z_vehicles[i] == v), None)
@@ -125,35 +139,20 @@ def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl,
                             Event = [True, "Simulation", 2]
                         else:
                             vehicle_states[Z_vehicles[i]] = vehicle_states[Z_vehicles[i]]+1
-        if check:
-            check=False
-            if random.random() < probabilityTA:
-                Event=[True,"Task",1]
-            #Check if a task Disappear
-            elif random.random() < probabilityTD:
-                Event=[True,"Task",2]
-            #Check if a new vehicle Appear
-            elif random.random() < probabilityVA:
-                Event=[True,"Vehicle",1]
-            #Check if a vehicle Disappear
-            elif random.random() < probabilityVD:
-                Event=[True,"Vehicle",2]
-            #Check if a new implement Appear
-            elif random.random() < probabilityIA:
-                Event=[True,"Implement",1]
-            #Check if a implement Disappear
-            elif random.random() < probabilityID:
-                Event=[True,"Implement",2]
+                            
+    Event=CheckProbability(probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA,Event)
 
 
     if Event[0] or Imp:
         for v in range(num_vehicles):
-            Distancia[v]=Distancia[v]-Vl[v]+dif
             dx=XActual[v]-Vehicles[v,0]
             dy=YActual[v]-Vehicles[v,1]
             alpha=math.atan2(dy,dx)
-            Vehicles[v,1]-=Vl[v]*math.sin(alpha)+dif*math.sin(alpha)
-            Vehicles[v,0]-=Vl[v]*math.cos(alpha)+dif*math.cos(alpha)
+            excess = Vl[v] - dif 
+            Vehicles[v,1] -= excess * math.sin(alpha)
+            Vehicles[v,0] -= excess * math.cos(alpha)
+            Distancia[v]-= excess
+            totalDistancia[v] -= excess
         Imp=False
 
             

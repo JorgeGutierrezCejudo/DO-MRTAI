@@ -1,50 +1,50 @@
 [
     [
         "Battery of vehicule 0",
-        6
+        100
     ],
     [
         "Battery of vehicule 1",
-        5
+        62
+    ],
+    [
+        "Distance of vehicule 0",
+        474.55
     ],
     [
         "Distance of vehicule 1",
-        268
-    ],
-    [
-        "Distance of vehicule 2",
-        268
+        474.55
     ],
     [
         "Elapsed time",
-        43.333
+        94.819
     ],
     [
         "Elapsed time of optimization",
-        0.02293
+        0.05861
     ],
     [
         "Cost of penalty of task do not finish",
-        4098.902
+        7807.402
     ],
     [
         "Cost of task done",
-        1576.141
+        2851.48
     ],
     [
         "Cost of distance",
-        106.737
+        68.213
     ],
     [
         "Total objective value (this iteration)",
-        5781.781
+        10727.096
     ],
     [
         "Total objective value",
-        6211.425
+        11639.974
     ],
     [
         "Number of events",
-        10
+        17
     ]
 ]
