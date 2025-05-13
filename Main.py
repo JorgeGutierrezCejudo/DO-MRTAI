@@ -4,8 +4,8 @@ from PIL import Image, ImageTk
 import os
 import json
 import csv
-import Data
-import DoMRTAI as dm
+from Data import Data 
+from Algorithm import DoMRTAI as dm
 import subprocess 
 
 # Directorio y balance de costos y energía
@@ -13,7 +13,7 @@ CostBalance = [1, 0.01]  # [Costo de estático, Costo de dinámico]
 EnergyBalance = [1, 0.2] # [Energía de estático, Energía de dinámico]
 
 # Archivo de configuración
-default_config_file = "config.json"
+default_config_file = "ConfigFile/config.json"
 dir=os.getcwd()
 
 # Crear carpeta de resultados
@@ -29,7 +29,7 @@ csv_headers = [
     "num_implements", "num_tasks", "num_vehicles", "seed", "full", 
     "time_horizon", "num_periods", "probabilityTA", "probabilityTD",
     "probabilityVA", "probabilityVD", "probabilityIA", "probabilityID",
-    "t", "toptimization", "Obj", "Distancia_list"
+    "t", "toptimization", "Obj","PenaltyCost","StaticCost", "DistanciaTotal","Distancia_list","DesvDistancia","TaskDone_list","DesvTaskDone",
 ]
 
 # Verificar si el archivo CSV existe, si no, crearlo con encabezados
@@ -38,8 +38,12 @@ if not os.path.exists(csv_file):
         writer = csv.writer(f,delimiter=";")
         writer.writerow(csv_headers)
 
-def save_results_to_csv(experiment, t, toptimization, Obj, Distancia_list, InfoTaskDone):
+def save_results_to_csv(experiment, t,toptimization,Obj,DoneAsignationCost,StaticCostTask,Distancia_list,InfoTaskDone):
     Distancia_list = [item[1] for item in Distancia_list]
+    DistanciaTotal= sum(Distancia_list)
+    DesvDistancia=max(Distancia_list) - min(Distancia_list)
+    InfoTaskDone = [item[1] for item in InfoTaskDone]
+    DesvTaskDone= max(InfoTaskDone) - min(InfoTaskDone)
     with open(csv_file, "a", newline='') as f:
         writer = csv.writer(f,delimiter=";")
         writer.writerow([
@@ -47,7 +51,7 @@ def save_results_to_csv(experiment, t, toptimization, Obj, Distancia_list, InfoT
             experiment["seed"], experiment["full"], experiment["time_horizon"], 
             experiment["num_periods"], experiment["probabilityTA"], experiment["probabilityTD"],
             experiment["probabilityVA"], experiment["probabilityVD"], experiment["probabilityIA"], 
-            experiment["probabilityID"], t, toptimization, Obj, Distancia_list
+            experiment["probabilityID"], t, toptimization, Obj,DoneAsignationCost,StaticCostTask,DistanciaTotal,Distancia_list,DesvDistancia,InfoTaskDone,DesvTaskDone
         ])
 
 
@@ -92,12 +96,12 @@ def run_experiment(experiment):
     os.chdir(dir)
     Implements, Tasks, Vehicles = Data.PositionData(num_implements, num_tasks, num_vehicles, seed)
     os.chdir(dir)
-    t, toptimization, Obj, Distancia_list, InfoTaskDone = dm.init(
+    t,toptimization,Obj,DoneAsignationCost,StaticCostTask,Distancia_list,RobotPerformanceList = dm.init(
         Implements, Tasks, Vehicles, T, num_periods,
         probabilityTA, probabilityTD, probabilityVA, probabilityVD, probabilityIA, probabilityID, full, seed
     )
 
-    save_results_to_csv(experiment, t, toptimization, Obj, Distancia_list, InfoTaskDone)
+    save_results_to_csv(experiment, t,toptimization,Obj,DoneAsignationCost,StaticCostTask,Distancia_list,RobotPerformanceList)
     print("Experiment completed and results saved.")
 
 
@@ -106,7 +110,7 @@ def run_experiment_from_file(config_file):
     with open(config_file, 'r') as f:
         experiments = json.load(f)
 
-    visualization_process = subprocess.Popen(["python3.8", "Result.py"])
+    visualization_process = subprocess.Popen(["python3.8", "View/Result.py"])
 
     for experiment in experiments:
         run_experiment(experiment)
@@ -156,7 +160,7 @@ def run_manual_configuration():
 
     def run_optimization():
         save_config()
-        visualization_process = subprocess.Popen(["python3.8", "Result.py"])
+        visualization_process = subprocess.Popen(["python3.8", "View/Result.py"])
         experiment = {
                     "num_implements": num_implements_entry.get(),
                     "num_tasks": num_tasks_entry.get(),
@@ -198,7 +202,7 @@ def run_manual_configuration():
     header_frame = tk.Frame(root, bg="white")
     header_frame.pack(fill=tk.X, pady=10)
 
-    logo1_image = Image.open("URJC-Logo.png")
+    logo1_image = Image.open("Logos/URJC-Logo.png")
     logo1_image = logo1_image.resize((192, 108), Image.ANTIALIAS)
     logo1_photo = ImageTk.PhotoImage(logo1_image)
     logo1_label = tk.Label(header_frame, image=logo1_photo, bg="white")
@@ -208,7 +212,7 @@ def run_manual_configuration():
     title_label = tk.Label(header_frame, text="Parameter Configuration", font=("Roboto", 20, "bold"), bg="white", fg="black")
     title_label.pack(side=tk.LEFT, expand=True, padx=10)
 
-    logo2_image = Image.open("Logo-Universita-Roma-Tor-Vergata.png")
+    logo2_image = Image.open("Logos/Logo-Universita-Roma-Tor-Vergata.png")
     logo2_image = logo2_image.resize((192, 50), Image.ANTIALIAS)
     logo2_photo = ImageTk.PhotoImage(logo2_image)
     logo2_label = tk.Label(header_frame, image=logo2_photo, bg="white")
@@ -280,7 +284,7 @@ style.configure("TButton",
 header_frame = tk.Frame(root, bg="white")
 header_frame.pack(fill=tk.X, pady=10)
 
-logo1_image = Image.open("URJC-Logo.png")
+logo1_image = Image.open("Logos/URJC-Logo.png")
 logo1_image = logo1_image.resize((192, 108), Image.ANTIALIAS)
 logo1_photo = ImageTk.PhotoImage(logo1_image)
 logo1_label = tk.Label(header_frame, image=logo1_photo, bg="white")
@@ -290,7 +294,7 @@ logo1_label.pack(side=tk.LEFT, padx=10)
 title_label = tk.Label(header_frame, text="Select Mode", font=("Roboto", 20, "bold"), bg="white", fg="black")
 title_label.pack(side=tk.LEFT, expand=True, padx=10)
 
-logo2_image = Image.open("Logo-Universita-Roma-Tor-Vergata.png")
+logo2_image = Image.open("Logos/Logo-Universita-Roma-Tor-Vergata.png")
 logo2_image = logo2_image.resize((192, 50), Image.ANTIALIAS)
 logo2_photo = ImageTk.PhotoImage(logo2_image)
 logo2_label = tk.Label(header_frame, image=logo2_photo, bg="white")
