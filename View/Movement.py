@@ -95,10 +95,6 @@ def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl,
                     ttask= end_time - start_time
                     reached_info.append((A_implements[i], A_tasks[i], A_vehicles[i],int(vehicle_states[A_vehicles[i]]),ttask)) 
                     FinishedTasks+=1
-                    print("+++++++++++++++++")
-                    print(len(A_tasks))
-                    print(FinishedTasks)    
-                    print("+++++++++++++++++")# Almacenar la información del vehículo, implemento y tarea alcanzados
                     if num_periods<=1:
                         Event = [True, "Simulation", 1]
                     else:
@@ -154,7 +150,7 @@ def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl,
     Event=CheckProbability(probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA,Event)
 
 
-    if Event[0] or Imp:
+    if Event[1]=="Simulacion" or Imp:
         for v in range(num_vehicles):
             if StoppedDepot[v]==1:
                 dx=XActual[v]-Vehicles[v,0]
@@ -267,9 +263,11 @@ def custom_animation(Implements, Tasks, Vehicles, Asignments, ZAsignments, proba
 
         # Verificar si hay eventos para detener la simulación
         if Event[0]:
-            print("***************************************************************************************************************")
-            print("                                 EVENT TRIGGERED - SIMULATION STOPPED")
-            print("***************************************************************************************************************")
+            print (
+                    "***************************************************************************************************************\n"
+                    f"                   EVENT TRIGGERED - SIMULATION STOPPED\n"
+                    "***************************************************************************************************************"
+                )
             end_time = time.time()
             execution_time = end_time - start_time
             plt.close(fig)
@@ -278,6 +276,7 @@ def custom_animation(Implements, Tasks, Vehicles, Asignments, ZAsignments, proba
         return True,None
 
     def run_animation(jota,totalDistancia,vehicle_states):
+        global check
         i = 0
         stop=True
         while stop:
@@ -285,9 +284,10 @@ def custom_animation(Implements, Tasks, Vehicles, Asignments, ZAsignments, proba
             stop,execution_time=update_frame(step_fraction,totalDistancia,vehicle_states)
             plt.pause(0.001)
             i += 1
+            if i % 5 == 0:
+                check=True
             if i == num_steps:
                 jota += 1
-                check = True
                 i = 0
 
         return execution_time

@@ -27,6 +27,12 @@ class TaskEvent(Event):
 
     def process(self):
         if self.task_id == 1:
+            self.description="NEW TASK APPEARED"
+            print (
+                    "***************************************************************************************************************\n"
+                    f"                   {self.description} - RE-CALCULATION THE ROUTES\n"
+                    "***************************************************************************************************************"
+            )
             NTasks = np.random.randint(0, 100, size=(self.num,3))
             Penalty=  np.random.randint(100, 1000, size=(self.num,1))
             NTasks = np.concatenate((NTasks,Penalty),axis=1)
@@ -54,8 +60,6 @@ class VehicleEvent(Event):
                     "***************************************************************************************************************"
                 )
     
-
-            
         elif self.vehicle_id==1:
                 self.description="NEW VEHICLE"
                 print (

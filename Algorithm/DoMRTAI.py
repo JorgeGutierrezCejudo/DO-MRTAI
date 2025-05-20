@@ -55,7 +55,7 @@ def init(Implements, Tasks, Vehicles, T, num_periods, probabilityTA, probability
     Distancia = np.ones((len(Vehicles)), dtype=float)
     CostBalance = [0, 1]
     alpha, beta = 0.05, 0.95
-    EnergyBalance = [1, 1]
+    EnergyBalance = [0, 1]
     Tmin = 0
 
     # Directory and logger
@@ -206,9 +206,14 @@ def init(Implements, Tasks, Vehicles, T, num_periods, probabilityTA, probability
             # ==========================
             # 2.4.1 Update List
             # ==========================
+        
         AssigmentDone.append(XAsignments)
-        AssigmentDoneList=pop.AssignmentByRobot(AssigmentDone)
+        try:
+            AssigmentDoneList=pop.AssignmentByRobot(AssigmentDone)
+        except:
+            pass
         t=t+(tmo)
+
 
             # ==========================
             # 2.4.2 Event Processing
@@ -252,8 +257,14 @@ def init(Implements, Tasks, Vehicles, T, num_periods, probabilityTA, probability
         # ==========================
         
 
+        try:
+            RobotPerformanceList=[[f"Task done by Robot {i}",AssigmentDoneList[i]["TaskCount"]] for i in AssigmentDoneList.keys()]
+        except:
+            try: 
+                RobotPerformanceList=RobotPerformanceList
+            except:
+                RobotPerformanceList=[]
 
-        RobotPerformanceList=[[f"Task done by Robot {i}",AssigmentDoneList[i]["TaskCount"]] for i in AssigmentDoneList.keys()]
         That_list = [[f"Battery of vehicule {i}", int(That[i])] for i in range(num_vehicles)]
         Distancia_list = [[f"Distance of vehicule {i}", round(totalDistancia[i],2)] for i in range(num_vehicles)]
         summary_data = [
@@ -281,11 +292,7 @@ def init(Implements, Tasks, Vehicles, T, num_periods, probabilityTA, probability
     
     # ========================== CALCULETE OBJECTIVE FUNCTION ===================================
     CostDistance,DoneAsignationCost,StaticCostTask=pop.TrueObj(totalDistancia, InfoTaskDone,AssigmentDoneList, EfVehicle,aTasck,EfImplement)
-    print("CostDistance",CostDistance)
-    print("DoneAsignationCost",DoneAsignationCost)
-    print("StaticCostTask",StaticCostTask)
     Obj = CostDistance + DoneAsignationCost+ StaticCostTask
-    print("Obj",Obj)
     return t,toptimization,Obj,DoneAsignationCost,StaticCostTask,Distancia_list,RobotPerformanceList
 
 

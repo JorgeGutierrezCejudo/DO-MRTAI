@@ -1,11 +1,11 @@
 [
     [
         "Battery of vehicule 0",
-        80
+        66
     ],
     [
         "Battery of vehicule 1",
-        86
+        77
     ],
     [
         "Battery of vehicule 2",
@@ -13,15 +13,15 @@
     ],
     [
         "Battery of vehicule 3",
-        83
+        68
     ],
     [
         "Battery of vehicule 4",
-        84
+        56
     ],
     [
         "Battery of vehicule 5",
-        86
+        84
     ],
     [
         "Battery of vehicule 6",
@@ -29,11 +29,11 @@
     ],
     [
         "Battery of vehicule 7",
-        90
+        63
     ],
     [
         "Battery of vehicule 8",
-        5
+        75
     ],
     [
         "Battery of vehicule 9",
@@ -41,55 +41,51 @@
     ],
     [
         "Distance of vehicule 0",
-        301.38
+        93.53
     ],
     [
         "Distance of vehicule 1",
-        242.38
+        69.49
     ],
     [
         "Distance of vehicule 2",
-        182.38
+        50.49
     ],
     [
         "Distance of vehicule 3",
-        186.38
+        93.53
     ],
     [
         "Distance of vehicule 4",
-        273.38
+        93.53
     ],
     [
         "Distance of vehicule 5",
-        214.38
+        93.53
     ],
     [
         "Distance of vehicule 6",
-        172.38
+        65.49
     ],
     [
         "Distance of vehicule 7",
-        301.38
+        93.53
     ],
     [
         "Distance of vehicule 8",
-        300.38
+        70.49
     ],
     [
         "Distance of vehicule 9",
-        230.38
+        90.53
     ],
     [
         "Task done by Robot 0",
-        5
+        2
     ],
     [
         "Task done by Robot 1",
-        3
-    ],
-    [
-        "Task done by Robot 2",
-        3
+        1
     ],
     [
         "Task done by Robot 3",
@@ -97,42 +93,30 @@
     ],
     [
         "Task done by Robot 4",
-        6
-    ],
-    [
-        "Task done by Robot 5",
-        4
-    ],
-    [
-        "Task done by Robot 6",
         3
     ],
     [
+        "Task done by Robot 5",
+        1
+    ],
+    [
         "Task done by Robot 7",
-        4
-    ],
-    [
-        "Task done by Robot 8",
-        6
-    ],
-    [
-        "Task done by Robot 9",
-        4
+        2
     ],
     [
         "Total distance",
-        2404.77
+        814.12
     ],
     [
         "Elapsed time",
-        158.25
+        86.048
     ],
     [
         "Elapsed time of optimization",
-        10.88925
+        0.18997
     ],
     [
         "Number of events",
-        2
+        10
     ]
 ]
