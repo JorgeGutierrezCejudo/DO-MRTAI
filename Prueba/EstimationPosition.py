@@ -64,28 +64,47 @@ def TimeExtendCalculation(num_periods, num_implements, num_tasks, num_vehicles, 
 
         positions_over_time[t + 1] = positions  # Guardar las posiciones para este período
 
-        # Calcular nuevos costos dinámicos desde las posiciones probables
+        # Calcular nuevos costos simbólicos para el siguiente período
         Cstt = np.zeros((num_implements, num_tasks, num_vehicles))
         for i in range(num_implements):
             for k in range (num_tasks):
                 for v in range(num_vehicles):
-                    Xdiv=abs(xImplement[i]-xVehicle[v])
-                    Ydiv=abs(yImplement[i]-yVehicle[v])
-                    Distance1=sqrt(Xdiv**2+Ydiv**2)
-                    Xdik=abs(xTask[k]-xImplement[i])
-                    Ydik=abs(yTask[k]-yImplement[i])
-                    Distance2=sqrt(Xdik**2+Ydik**2)
-                    Cstt[i, k, v] = Distance1+Distance2
-                    if Ct[t,i,k,v]==1000:
-                        Cstt[i, k, v]=1000
-        Cstt = 0.5 * Csta + 0.5 * Cstt
-        # Actualizar matrices
-        Ct[t+1,:,:,:]=Cstt
-        for v in range(num_vehicles):
-            for task in selected_tasks:
-                Ct[t+1,:, task, v] = 1000  # Asignar un costo alto a las tareas seleccionadas
+                    # Calcular coste simbólico basado en:
+                    # 1. Coste actual
+                    # 2. Distancia actual a la tarea
+                    # 3. Eficiencia del vehículo e implemento
+                    current_distance = sqrt(
+                        (x_task[k] - positions[v, 0])**2 + 
+                        (y_task[k] - positions[v, 1])**2
+                    )
+                    
+                    # Factor de eficiencia combinada
+                    efficiency_factor = 1 / (Implements[i, 2] * Vehicles[v, 2])
+                    
+                    # Coste simbólico que refleja la incertidumbre
+                    Cstt[i, k, v] = Ct[t, i, k, v] * (1 + current_distance/100) * efficiency_factor
         
-       
+        # Actualizar matrices con los nuevos costes
+        Ct[t+1,:,:,:] = Cstt
+        
+        # Marcar las tareas completadas en el período anterior
+        completed_tasks = set()
+        for v in range(num_vehicles):
+            for implement, task in selected_combinations_over_time[t, v]:
+                if task != -1:  # Verificar que la tarea es válida
+                    completed_tasks.add(task)
+        
+        # Actualizar costos para las tareas completadas
+        for task in completed_tasks:
+            # Marcar la tarea como completada con un costo muy alto pero no infinito
+            # Esto permite que el modelo de optimización aún pueda considerarla si es absolutamente necesario
+            Ct[t+1,:, task, :] = 1e6  # Un valor alto pero no infinito
+        
+        # Actualizar el estado de las tareas completadas
+        for task in completed_tasks:
+            Tasks[task, 2] = 0  # Marcar el área como 0 (tarea completada)
+        
+    print(Ct)
 
     return Ct, positions_over_time, selected_combinations_over_time
 
@@ -176,13 +195,38 @@ Cd = np.zeros((num_implements, num_tasks, num_vehicles))
 for i in range(num_implements):
     for k in range(num_tasks):
         for v in range(num_vehicles):
+            # Calcular distancia al implemento
             Xdiv = abs(xImplement[i] - xVehicle[v])
             Ydiv = abs(yImplement[i] - yVehicle[v])
             Distance1 = sqrt(Xdiv**2 + Ydiv**2)
+            
+            # Calcular distancia de implemento a tarea
             Xdik = abs(xTask[k] - xImplement[i])
             Ydik = abs(yTask[k] - yImplement[i])
             Distance2 = sqrt(Xdik**2 + Ydik**2)
-            Cd[i, k, v] = Distance1 + Distance2
+            
+            # Calcular ángulos para estimar tiempo de giro
+            angle1 = np.arctan2(Ydiv, Xdiv) if Xdiv != 0 else 0
+            angle2 = np.arctan2(Ydik, Xdik) if Xdik != 0 else 0
+            turn_angle = abs(angle2 - angle1)
+            
+            # Obtener parámetros del vehículo
+            vehicle_speed = Vehicles[v, 3]  # Velocidad del vehículo
+            vehicle_efficiency = Vehicles[v, 2]  # Eficiencia del vehículo
+            
+            # Calcular tiempo de desplazamiento
+            travel_time1 = Distance1 / (vehicle_speed * vehicle_efficiency)
+            travel_time2 = Distance2 / (vehicle_speed * vehicle_efficiency)
+            
+            # Calcular tiempo de giro (asumiendo velocidad de giro constante)
+            turn_speed = 30  # grados por segundo
+            turn_time = (turn_angle * 180 / np.pi) / turn_speed
+            
+            # Calcular consumo de energía/combustible
+            energy_consumption = (Distance1 + Distance2) * (1 + turn_angle / (2 * np.pi))
+            
+            # Coste total considerando tiempo y energía
+            Cd[i, k, v] = (travel_time1 + travel_time2 + turn_time) * (1 + energy_consumption/1000)
 
 CostBalance = [0.5, 0.5]
 aTasck=Tasks[:,2]
