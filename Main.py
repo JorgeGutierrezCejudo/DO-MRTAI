@@ -30,6 +30,7 @@ csv_headers = [
     "time_horizon", "num_periods", "probabilityTA", "probabilityTD",
     "probabilityVA", "probabilityVD", "probabilityIA", "probabilityID",
     "t", "toptimization", "Obj","PenaltyCost","StaticCost", "DistanciaTotal","Distancia_list","DesvDistancia","TaskDone_list","DesvTaskDone",
+    "TotalTasksDone", "TasksCompleted"
 ]
 
 # Verificar si el archivo CSV existe, si no, crearlo con encabezados
@@ -44,6 +45,9 @@ def save_results_to_csv(experiment, t,toptimization,Obj,DoneAsignationCost,Stati
     DesvDistancia=max(Distancia_list) - min(Distancia_list)
     InfoTaskDone = [item[1] for item in InfoTaskDone]
     DesvTaskDone= max(InfoTaskDone) - min(InfoTaskDone)
+    TotalTasksDone = sum(InfoTaskDone)
+    TasksCompleted = TotalTasksDone == int(experiment["num_tasks"])
+    
     with open(csv_file, "a", newline='') as f:
         writer = csv.writer(f,delimiter=";")
         writer.writerow([
@@ -51,7 +55,8 @@ def save_results_to_csv(experiment, t,toptimization,Obj,DoneAsignationCost,Stati
             experiment["seed"], experiment["full"], experiment["time_horizon"], 
             experiment["num_periods"], experiment["probabilityTA"], experiment["probabilityTD"],
             experiment["probabilityVA"], experiment["probabilityVD"], experiment["probabilityIA"], 
-            experiment["probabilityID"], t, toptimization, Obj,DoneAsignationCost,StaticCostTask,DistanciaTotal,Distancia_list,DesvDistancia,InfoTaskDone,DesvTaskDone
+            experiment["probabilityID"], t, toptimization, Obj,DoneAsignationCost,StaticCostTask,DistanciaTotal,Distancia_list,DesvDistancia,InfoTaskDone,DesvTaskDone,
+            TotalTasksDone, TasksCompleted
         ])
 
 

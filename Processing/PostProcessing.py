@@ -111,33 +111,35 @@ def AssignmentByRobot(Assignments):
         dict: Dictionary where the keys are the vehicle identifiers and the values
               include the number of tasks and a list of tasks performed by each vehicle.
     """
-    tasks_by_vehicle = {}
+    if Assignments is None:
+        return None
+    else:
+        tasks_by_vehicle = {}
 
-    # If it's a list of strings (active keys), wrap them in a dictionary format
-    if all(isinstance(item, str) for item in Assignments):
-        Assignments = [{key: '1'} for key in Assignments]
+        # If it's a list of strings (active keys), wrap them in a dictionary format
+        if all(isinstance(item, str) for item in Assignments):
+            Assignments = [{key: '1'} for key in Assignments]
+        for assignment in Assignments:
+            if not isinstance(assignment, dict):
+                raise TypeError(f"Expected each element to be a dictionary or a list of strings, but got {type(assignment).__name__}")
 
-    for assignment in Assignments:
-        if not isinstance(assignment, dict):
-            raise TypeError(f"Expected each element to be a dictionary or a list of strings, but got {type(assignment).__name__}")
+            for key, value in assignment.items():
 
-        for key, value in assignment.items():
+                parts = key.split('_')
+                implement = parts[1]
+                task = parts[2]
+                vehicle = parts[3]
 
-            parts = key.split('_')
-            implement = parts[1]
-            task = parts[2]
-            vehicle = parts[3]
+                if vehicle not in tasks_by_vehicle:
+                    tasks_by_vehicle[vehicle] = {
+                        "TaskCount": 0,
+                        "Tasks": []
+                    }
 
-            if vehicle not in tasks_by_vehicle:
-                tasks_by_vehicle[vehicle] = {
-                    "TaskCount": 0,
-                    "Tasks": []
-                }
-
-            tasks_by_vehicle[vehicle]["Tasks"].append({
-                "Implement": implement,
-                "Task": task
-            })
-            tasks_by_vehicle[vehicle]["TaskCount"] += 1
-    tasks_by_vehicle = dict(sorted(tasks_by_vehicle.items(), key=lambda x: int(x[0])))
-    return tasks_by_vehicle
+                tasks_by_vehicle[vehicle]["Tasks"].append({
+                    "Implement": implement,
+                    "Task": task
+                })
+                tasks_by_vehicle[vehicle]["TaskCount"] += 1
+        tasks_by_vehicle = dict(sorted(tasks_by_vehicle.items(), key=lambda x: int(x[0])))
+        return tasks_by_vehicle

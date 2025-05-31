@@ -45,9 +45,6 @@ def init(Implements, Tasks, Vehicles, T, num_periods, probabilityTA, probability
     XAsignments = {}
     ZAsignments = {}
     TAsignments = {}
-    aTasck=Tasks[:,2]
-    EfImplement=Implements[:,2]
-    EfVehicle=Vehicles[:,2]
 
     # Optimization variables
     b = 0
@@ -195,9 +192,8 @@ def init(Implements, Tasks, Vehicles, T, num_periods, probabilityTA, probability
         # ==========================
         # 2.4 PostProcessing
         # ==========================
-        t=t+(tmo)
         if Event[0]:  
-            XAsignments,InfoTaskDone,ZAsignments=pop.AssignmentDone(AssignmentT,t,InfoTaskDone,M,depot_info)
+            XAsignments,InfoTaskDone,ZAsignments=pop.AssignmentDone(AssignmentT,t,InfoTaskDone,M,depot_info) 
             try:
                 Implements,Tasks,Vehicles,M,That=pp.UpdateInfoST(XAsignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,T_max,Distancia)
             except:
@@ -206,12 +202,10 @@ def init(Implements, Tasks, Vehicles, T, num_periods, probabilityTA, probability
             # ==========================
             # 2.4.1 Update List
             # ==========================
-        
-        AssigmentDone.append(XAsignments)
-        try:
+        if XAsignments is not None:
+            AssigmentDone.append(XAsignments)
             AssigmentDoneList=pop.AssignmentByRobot(AssigmentDone)
-        except:
-            pass
+            
         t=t+(tmo)
 
 
@@ -284,13 +278,23 @@ def init(Implements, Tasks, Vehicles, T, num_periods, probabilityTA, probability
 
         K=[k for k, State in enumerate(StTask) if State == 0]
         if len(K)==0:
+            aTasck=Tasks[:,2]
+            EfImplement=Implements[:,2]
+            EfVehicle=Vehicles[:,2]
             Tasks=[]
+        
+        if t>T:
+            aTasck=Tasks[:,2]
+            EfImplement=Implements[:,2]
+            EfVehicle=Vehicles[:,2]
 
 
     
 
     
     # ========================== CALCULETE OBJECTIVE FUNCTION ===================================
+
+
     CostDistance,DoneAsignationCost,StaticCostTask=pop.TrueObj(totalDistancia, InfoTaskDone,AssigmentDoneList, EfVehicle,aTasck,EfImplement)
     Obj = CostDistance + DoneAsignationCost+ StaticCostTask
     return t,toptimization,Obj,DoneAsignationCost,StaticCostTask,Distancia_list,RobotPerformanceList
