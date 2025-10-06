@@ -91,7 +91,7 @@ def init(Implements, Tasks, Vehicles, T, num_periods, probabilityTA, probability
             if t==0: 
                 M= Tasks[:, 3]
             else: 
-                M = (200*(math.log10(t)))+Tasks[:, 3]
+                M = (0.2*t*t*t)+Tasks[:, 3]
 
             That = Vehicles[:, 4]
             T_max = Vehicles[:, 3]

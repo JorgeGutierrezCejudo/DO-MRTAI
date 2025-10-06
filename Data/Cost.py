@@ -1,6 +1,7 @@
 from math import sqrt
 import numpy as np
 
+#Dynamic calculation of cost 
 def DynamicCalculation(num_implements,num_tasks,num_vehicles,Implements,Tasks,Vehicles):
     xImplement=Implements[:,0]
     yImplement=Implements[:,1]
@@ -25,6 +26,7 @@ def DynamicCalculation(num_implements,num_tasks,num_vehicles,Implements,Tasks,Ve
                 Cd[i,k,v]=Distance1+Distance2
     return Cd,Bd
 
+#Static calculation of cost 
 def StaticCalculation(num_implements,num_tasks,num_vehicles,Implements,Tasks,Vehicles):
     aTasck=Tasks[:,2]
     EfImplement=Implements[:,2]
@@ -69,7 +71,7 @@ def NormalicedCalculation(num_periods, M,I,K,V,c_ikv, c_v0_prime):
 
     return Cmax, Mmax
 
-
+#Cost calculation for the time extend model
 def TimeExtendCalculation (num_periods,num_implements,num_tasks,num_vehicles,Cst,Cd,bst,bd,M,Cprime,Tasks):
     
     Cst_pivot=Cst

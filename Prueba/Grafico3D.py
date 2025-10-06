@@ -4,7 +4,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
 # Leer archivo CSV
-df = pd.read_csv('Results.csv', sep=';')
+df = pd.read_csv('Results-Log.csv', sep=';')
 df.columns = df.columns.str.strip()
 
 # Convertir columnas necesarias a numérico

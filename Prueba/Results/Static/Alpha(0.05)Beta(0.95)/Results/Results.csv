@@ -1,0 +1,1 @@
+num_implements;num_tasks;num_vehicles;seed;full;time_horizon;num_periods;probabilityTA;probabilityTD;probabilityVA;probabilityVD;probabilityIA;probabilityID;t;toptimization;Obj;PenaltyCost;StaticCost;DistanciaTotal;Distancia_list;DesvDistancia;TaskDone_list;DesvTaskDone;TotalTasksDone;TasksCompleted
