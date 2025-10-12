@@ -1,0 +1,54 @@
+[
+    [
+        "Battery of vehicule 0",
+        71
+    ],
+    [
+        "Battery of vehicule 1",
+        85
+    ],
+    [
+        "Battery of vehicule 2",
+        82
+    ],
+    [
+        "Distance of vehicule 0",
+        128.65
+    ],
+    [
+        "Distance of vehicule 1",
+        128.65
+    ],
+    [
+        "Distance of vehicule 2",
+        128.65
+    ],
+    [
+        "Task done by Robot 0",
+        3
+    ],
+    [
+        "Task done by Robot 1",
+        2
+    ],
+    [
+        "Task done by Robot 2",
+        2
+    ],
+    [
+        "Total distance",
+        385.94
+    ],
+    [
+        "Elapsed time",
+        29.507
+    ],
+    [
+        "Elapsed time of optimization",
+        0.03285
+    ],
+    [
+        "Number of events",
+        13
+    ]
+]

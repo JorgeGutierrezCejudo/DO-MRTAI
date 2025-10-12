@@ -1,0 +1,59 @@
+# D-MRTAI Requirements
+# Dynamic Multi-Robot Task Assignment with Implements
+# Author: Jorge
+# Date: 2024
+
+# Core Optimization
+gurobipy>=10.0.0          # Mixed Integer Programming solver (requires license)
+
+# Numerical Computing
+numpy>=1.21.0             # Array operations and numerical computations
+pandas>=1.3.0             # Data manipulation and CSV handling
+
+# Visualization
+matplotlib>=3.4.0         # Plotting and animation
+Pillow>=8.3.0            # Image handling for GUI logos
+
+# GUI Framework
+# Note: tkinter is usually included with Python, but if missing:
+# sudo apt-get install python3-tk
+
+# GTK Backend (for matplotlib animations on Linux)
+# Install system-wide with:
+# sudo apt-get install python3-gi python3-gi-cairo gir1.2-gtk-3.0
+
+# Utilities
+tabulate>=0.8.9          # Table formatting for console output
+
+# Optional: ROS Integration
+# Uncomment if using ROS features
+# roslibpy>=1.3.0         # ROS bridge for Python
+
+# Development Tools (Optional)
+# pytest>=7.0.0           # Testing framework
+# black>=22.0.0           # Code formatter
+# flake8>=4.0.0           # Linting
+
+# Notes:
+# ------
+# 1. Gurobi License Required:
+#    - Academic: https://www.gurobi.com/academia/academic-program-and-licenses/
+#    - Commercial: https://www.gurobi.com/downloads/
+#    - After installation, activate with: grbgetkey YOUR-LICENSE-KEY
+#
+# 2. Python Version:
+#    - Minimum: Python 3.8
+#    - Recommended: Python 3.10+
+#
+# 3. System Dependencies (Ubuntu/Debian):
+#    sudo apt-get update
+#    sudo apt-get install python3-tk python3-gi python3-gi-cairo gir1.2-gtk-3.0
+#
+# 4. Installation:
+#    pip install -r requirements.txt
+#
+# 5. Virtual Environment (Recommended):
+#    python3 -m venv venv
+#    source venv/bin/activate  # On Windows: venv\Scripts\activate
+#    pip install -r requirements.txt
+

@@ -1,7 +1,48 @@
+"""
+Cost.py - Cost and Energy Calculation Functions for D-MRTAI
+
+This module contains all cost and energy consumption calculation functions for the optimization system.
+It handles both static costs (based on task characteristics and entity efficiencies) and dynamic costs
+(based on Euclidean distances between entities).
+
+Key Functions:
+- DynamicCalculation: Distance-based costs and energy consumption
+- StaticCalculation: Task-based costs and energy consumption
+- PrimeCalculation: Depot return costs for vehicles
+- NormalicedCalculation: Normalize costs for numerical stability
+- TimeExtendCalculation: Replicate and vary costs across multiple periods
+
+Cost Components:
+- Cd: Dynamic cost (distance-based)
+- Cst: Static cost (task area / efficiency)
+- Cprime: Depot return cost
+- Bd: Dynamic energy consumption
+- Bst: Static energy consumption
+
+Author: Jorge
+Date: 2024
+"""
+
 from math import sqrt
 import numpy as np
 
 def DynamicCalculation(num_implements,num_tasks,num_vehicles,Implements,Tasks,Vehicles):
+    """
+    Calculate distance-based costs and energy consumption.
+    
+    For each (implement, task, vehicle) triple, calculates:
+    1. Distance from vehicle to implement
+    2. Distance from implement to task
+    3. Total distance cost (sum of both)
+    4. Energy consumption proportional to distance
+    
+    Args:
+        num_implements, num_tasks, num_vehicles (int): Entity counts
+        Implements, Tasks, Vehicles (np.array): Position matrices
+    
+    Returns:
+        tuple: (Cd, Bd) - Dynamic cost and energy matrices [I x K x V]
+    """
     xImplement=Implements[:,0]
     yImplement=Implements[:,1]
     xTask=Tasks[:,0]
@@ -26,6 +67,23 @@ def DynamicCalculation(num_implements,num_tasks,num_vehicles,Implements,Tasks,Ve
     return Cd,Bd
 
 def StaticCalculation(num_implements,num_tasks,num_vehicles,Implements,Tasks,Vehicles):
+    """
+    Calculate task-based costs and energy consumption.
+    
+    Static cost represents the time/effort to complete a task based on:
+    - Task area/difficulty (aTasck)
+    - Implement efficiency (EfImplement)
+    - Vehicle efficiency (EfVehicle)
+    
+    Formula: Cst[i,k,v] = aTasck[k] / (EfImplement[i] * EfVehicle[v])
+    
+    Args:
+        num_implements, num_tasks, num_vehicles (int): Entity counts
+        Implements, Tasks, Vehicles (np.array): Parameter matrices
+    
+    Returns:
+        tuple: (Cst, Bst) - Static cost and energy matrices [I x K x V]
+    """
     aTasck=Tasks[:,2]
     EfImplement=Implements[:,2]
     EfVehicle=Vehicles[:,2]
@@ -40,19 +98,54 @@ def StaticCalculation(num_implements,num_tasks,num_vehicles,Implements,Tasks,Veh
     return Cst,Bst
 
 def PrimeCalculation(num_implements,num_tasks,num_vehicles,Implements,Tasks,Vehicles):
+    """
+    Calculate depot return costs for all vehicles.
+    
+    Computes Euclidean distance from each vehicle's current position to depot (origin: 0,0).
+    
+    Args:
+        num_implements, num_tasks, num_vehicles (int): Entity counts
+        Implements, Tasks, Vehicles (np.array): Position matrices
+    
+    Returns:
+        np.array: Cprime[v] - Distance from vehicle v to depot [num_vehicles]
+    """
     xVehicle=Vehicles[:,0]
     yVehicle=Vehicles[:,1]
 
     Cprime=np.zeros((num_vehicles))
 
     for v in range(num_vehicles):
-        Xd=abs(xVehicle[v]-0)
+        Xd=abs(xVehicle[v]-0)  # Distance to depot at (0,0)
         Yd=abs(yVehicle[v]-0)
         Distance=sqrt(Xd**2+Yd**2)
         Cprime[v]=Distance
     return Cprime
 
+<<<<<<< Updated upstream:Cost.py
 def NormalicedCalculation(num_periods,M,K):
+=======
+def NormalicedCalculation(num_periods, M,I,K,V,c_ikv, c_v0_prime):
+    """
+    Calculate normalization constants for costs and penalties.
+    
+    Normalizes objective function components to prevent numerical issues
+    and balance cost vs penalty terms appropriately.
+    
+    Args:
+        num_periods (int): Number of time periods
+        M (np.array): Penalty values
+        I, K, V (list): Entity index lists
+        c_ikv (np.array): Cost matrix
+        c_v0_prime (np.array): Depot return costs
+    
+    Returns:
+        tuple: (Cmax, Mmax) - Normalization constants
+            - Cmax: Max cost per vehicle (for cost normalization)
+            - Mmax: Total penalty sum (for penalty normalization)
+    """
+
+>>>>>>> Stashed changes:Data/Cost.py
     if num_periods<=1:
         Cmax=1
         Mmax=sum(M[k] for k in K)
@@ -63,6 +156,22 @@ def NormalicedCalculation(num_periods,M,K):
     return Cmax,Mmax
 
 def TimeExtendCalculation (num_periods,num_implements,num_tasks,num_vehicles,Cst,Cd,bst,bd,M,Cprime,Tasks):
+    """
+    Extend costs across multiple time periods with variations.
+    
+    Replicates single-period costs to create multi-period cost matrices,
+    adding small random variations to simulate changing conditions over time.
+    
+    Args:
+        num_periods (int): Number of time periods
+        num_implements, num_tasks, num_vehicles (int): Entity counts
+        Cst, Cd, bst, bd, M, Cprime (np.array): Single-period cost/energy/penalty arrays
+        Tasks (np.array): Task information (unused but kept for compatibility)
+    
+    Returns:
+        tuple: (Cst, Cd, bst, bd, M, Cprime) - All extended to [num_periods x ...]
+            Each matrix now has time as the first dimension
+    """
     
     Cst_pivot=Cst
     Cd_pivot=Cd
