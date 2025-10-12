@@ -1,3 +1,36 @@
+"""
+StaticModelSMC.py - Static Multi-Robot Task Assignment Optimization Model
+
+This module implements the static (single-period) optimization model for the D-MRTAI problem.
+It formulates and solves a Mixed Integer Programming (MIP) problem to optimally assign
+tasks to robot-implement pairs while minimizing costs and penalties.
+
+Key Features:
+- Single-period assignment optimization
+- Binary decision variables for task-implement-vehicle assignments
+- Minimizes weighted sum of assignment costs and task penalties
+- Enforces compatibility, battery, and assignment constraints
+- Uses Gurobi optimizer with configurable time limits
+
+Decision Variables:
+- x[i,k,v]: Binary, 1 if implement i with vehicle v is assigned to task k
+- y[k]: Binary, 1 if task k is assigned
+- z[v]: Binary, 1 if vehicle v returns to depot
+
+Objective:
+Minimize: alpha * (normalized costs) + beta * (penalties for unassigned tasks)
+
+Constraints:
+- Each implement assigned to at most one task
+- Each task assigned to exactly one implement-vehicle pair (or not assigned)
+- Each vehicle either assigned or returns to depot
+- Battery capacity constraints
+- Compatibility constraints between entities
+
+Author: Jorge
+Date: 2024
+"""
+
 import copy as copy
 from gurobipy import *
 from gurobipy import GRB
@@ -6,31 +39,65 @@ import pandas as pd
 import os
 
 def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime,Tmin):
-    #Model definition
-    model = Model('3index-assignment-3')
+    """
+    Create and solve the static assignment optimization model.
+    
+    Args:
+        C (np.array): Cost matrix [num_implements x num_tasks x num_vehicles]
+        M (np.array): Penalty vector for each task [num_tasks]
+        That (np.array): Current battery level for each vehicle [num_vehicles]
+        I (list): List of available implement indices
+        K (list): List of available task indices
+        V (list): List of available vehicle indices
+        Mmax (float): Normalization constant for penalties
+        Cmax (np.array): Normalization constants for costs per vehicle [num_vehicles]
+        IK, KI, IV, VI, KV, VK (np.array): Compatibility matrices
+        alpha (float): Weight for cost component in objective (typically 0.05)
+        beta (float): Weight for penalty component in objective (typically 0.95)
+        b (np.array): Energy consumption matrix [num_implements x num_tasks x num_vehicles]
+        Cprime (np.array): Depot return cost for each vehicle [num_vehicles]
+        Tmin (float): Minimum battery threshold
+        
+    Returns:
+        model: Gurobi model object with the solution (if feasible)
+    """
+    # ===================================
+    # Model Initialization
+    # ===================================
+    model = Model('StaticMRTAI-SinglePeriod')
 
-
+    # Recalculate normalization constants per vehicle
     Cmax = np.random.randint(0,1,size=len(V))
     for i in V:
         Cmax[i]=max(Cprime[i],np.max(C[:,:,i]))
-    #Set model time limit
-    timeLimit = 1000
+    
+    # Set solver parameters
+    timeLimit = 1000  # Maximum solving time in seconds
     model.setParam('TimeLimit', timeLimit)
-    #model.setParam('MIPGap', 0)
-    # ------------------------------------ Decision Variables definitions 
-    #Decision variables
+    #model.setParam('MIPGap', 0)  # Optional: set optimality gap tolerance
+    
+    # ===================================
+    # Decision Variables
+    # ===================================
+    # x[i,k,v]: Binary variable, 1 if implement i with vehicle v performs task k
+    # Only create variables for compatible combinations
     x = {(i, k, v): model.addVar(vtype=GRB.BINARY, name="x_" + str(i) + "_" + str(k) + "_" + str(v)) 
          for i in I for k in K for v in V if IK[i, k] == 1 and IV[i, v] == 1 and VK[v, k] == 1}
 
+    # y[k]: Binary variable, 1 if task k is assigned (completed)
     y = {(k): model.addVar(vtype=GRB.BINARY, name="y_" + str(k))
                     for k in K 
             }
     
+    # z[v]: Binary variable, 1 if vehicle v returns to depot without task
     z = {(v): model.addVar(vtype=GRB.BINARY, name="z_" + str(v))
                     for v in V 
             }
 
-    #Objective function
+    # ===================================
+    # Objective Function
+    # ===================================
+    # Minimize: alpha * (normalized assignment costs) + beta * (penalties for unassigned tasks)
     obj = (alpha) * quicksum(
         ((quicksum(C[i][k][v] * x[i, k, v] for (i, k, v) in x if v == vehicle) + Cprime[vehicle] * z[vehicle]) / Cmax[vehicle])
         for vehicle in V
@@ -38,26 +105,39 @@ def Optimization (C,M,That,I,K,V,Mmax,Cmax,IK,KI,IV,VI,KV,VK,alpha,beta,b,Cprime
     
     model.setObjective(obj, GRB.MINIMIZE)
 
-    #Constraints 5: at most 1 implement for task-vehicle 
+    # ===================================
+    # Constraints
+    # ===================================
+    
+    # Constraint 5: Each implement assigned to at most one task-vehicle pair
+    # Each implement can only work on one task at a time
     for i in I:
-        model.addConstr(quicksum(x[i, k, v] for k in K for v in V if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1) <= 1)
+        model.addConstr(quicksum(x[i, k, v] for k in K for v in V if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1) <= 1,
+                       name=f"implement_{i}_single_assignment")
 
-    #Constraints 6: at most 1 task for implement-vehicle
+    # Constraint 6: Task assignment consistency
+    # If task k is assigned (y[k]=1), exactly one implement-vehicle pair must perform it
     for k in K:
-        model.addConstr(quicksum(x[i, k, v] for i in I for v in V if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1) == y[k])
-    #Constraints 7: vehicle assignment to depot or task-implement
+        model.addConstr(quicksum(x[i, k, v] for i in I for v in V if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1) == y[k],
+                       name=f"task_{k}_assignment")
+    
+    # Constraint 7: Vehicle assignment exclusivity
+    # Each vehicle either performs one task or returns to depot
     for v in V:
-        model.addConstr(z[v] + quicksum(x[i, k, v] for i in I for k in K if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1) == 1)
-    #Constraints 8: vehicle autonomy constraints (could be preprocessed)
+        model.addConstr(z[v] + quicksum(x[i, k, v] for i in I for k in K if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1) == 1,
+                       name=f"vehicle_{v}_single_action")
+    
+    # Constraint 8: Battery/energy capacity constraints
+    # Total energy consumption must not exceed available battery minus minimum threshold
     for v in V:
-        model.addConstr(quicksum((b[i][k][v]) * x[i, k, v] for i in I for k in K if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1) <= That[v]-Tmin)
+        model.addConstr(quicksum((b[i][k][v]) * x[i, k, v] for i in I for k in K if IK[i,k]==1 and IV[i,v]==1 and KV[k,v]==1) <= That[v]-Tmin,
+                       name=f"vehicle_{v}_battery")
 
-
-    #Solving
+    # ===================================
+    # Solve the Model
+    # ===================================
     model.optimize()
-    model.write("model.lp")
-
-
+    model.write("model.lp")  # Write model to file for debugging
 
     return model
 

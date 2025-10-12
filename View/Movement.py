@@ -1,3 +1,30 @@
+"""
+Movement.py - Animated Simulation and Visualization for D-MRTAI
+
+This module provides real-time animated visualization of vehicle movements executing
+the optimized task assignments. It simulates vehicle trajectories, tracks progress,
+and can trigger dynamic events during execution.
+
+Key Features:
+- Real-time matplotlib animation of vehicle movements
+- Three-phase movement: vehicle to implement to task
+- Dynamic event generation during simulation
+- Progress tracking and distance measurement
+- Pause/resume functionality
+- Arrows showing vehicle directions and assignments
+
+Main Functions:
+- custom_animation: Main animation loop and control
+- update_positions: Physics and state updates for each frame
+- update_plot: Visualization updates for each frame
+- init_plot: Initialize the plot with all entities
+- CheckProbability: Probabilistic event generation
+- toggle_pause: Pause/resume handler
+
+Author: Jorge
+Date: 2024
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -11,38 +38,89 @@ from Events import EventLogger as EVlogger
 from Events import Events as EV
 import time
 matplotlib.use('GTK3Agg')
-check = False
-paused = False
+
+# Global state variables
+check = False  # Flag to check for events periodically
+paused = False  # Animation pause state
 
 def toggle_pause(event):
+    """Toggle animation pause state when pause button is clicked."""
     global paused
-    paused = not paused  # Alternar entre pausa y reanudación
+    paused = not paused
 
 def CheckProbability(probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA,Event):
+    """
+    Probabilistically generate dynamic events during simulation.
+    
+    Checks various event probabilities and randomly triggers events like:
+    - Task appearance/disappearance
+    - Vehicle appearance/breakdown
+    - Implement appearance/disappearance
+    
+    Args:
+        probabilityTA, probabilityTD: Task appearance/disappearance probabilities
+        probabilityVA, probabilityVD: Vehicle appearance/disappearance probabilities
+        probabilityIA, probabilityID: Implement appearance/disappearance probabilities
+        Event (list): Current event state [is_event, type, id]
+    
+    Returns:
+        list: Updated event state
+    """
     global check
     if check:
         check=False
+        # Check each event type with its probability
         if random.random() < probabilityTA:
-            Event=[True,"Task",1]
-        #Check if a task Disappear
+            Event=[True,"Task",1]  # Task appearance
         elif random.random() < probabilityTD:
-            Event=[True,"Task",2]
-        #Check if a new vehicle Appear
+            Event=[True,"Task",2]  # Task disappearance
         elif random.random() < probabilityVA:
-            Event=[True,"Vehicle",1]
-        #Check if a vehicle Disappear
+            Event=[True,"Vehicle",1]  # New vehicle
         elif random.random() < probabilityVD:
-            Event=[True,"Vehicle",2]
-        #Check if a new implement Appear
+            Event=[True,"Vehicle",2]  # Vehicle breakdown
         elif random.random() < probabilityIA:
-            Event=[True,"Implement",1]
-        #Check if a implement Disappear
+            Event=[True,"Implement",1]  # New implement
         elif random.random() < probabilityID:
-            Event=[True,"Implement",2]
+            Event=[True,"Implement",2]  # Implement disappearance
     
     return Event
 
 def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles,Distancia,probabilityTA,probabilityTD,probabilityVA,probabilityVD,probabilityID,probabilityIA,totalDistancia,num_periods,Z_periodsD,vehicle_states,FinishedTasks,start_time):
+    """
+    Update vehicle positions and states for one animation frame.
+    
+    This function handles the core simulation logic:
+    1. Moves vehicles toward their assigned implements
+    2. Moves vehicle+implement pairs toward assigned tasks
+    3. Moves idle vehicles back to depot
+    4. Checks for task/implement/depot completion
+    5. Triggers events when appropriate
+    6. Tracks distances and timing
+    
+    Movement phases for each vehicle:
+    - Phase 1: Vehicle to Implement (orange arrow)
+    - Phase 2: Vehicle+Implement to Task (green arrow)
+    - Phase 3: Vehicle to Depot (red arrow)
+    
+    Args:
+        Vehicles, Implements, Tasks: Entity position matrices
+        Asignments: Task assignments from optimization
+        step_fraction: Current animation step
+        Vl: Velocity for each vehicle
+        reached_implements, reached_tasks: Boolean arrays tracking progress
+        Z_vehicles: Vehicles assigned to depot
+        Distancia, totalDistancia: Distance tracking arrays
+        probability*: Event generation probabilities
+        num_periods: Number of planning periods
+        Z_periodsD: Depot assignment periods
+        vehicle_states: Current period for each vehicle
+        FinishedTasks: Number of completed tasks
+        start_time: Simulation start time
+    
+    Returns:
+        tuple: (Event, updated_Vehicles, updated_Implements, reached_info, 
+                depot_reached_info, New_task, Distancia, totalDistancia, vehicle_states)
+    """
     Event = [False, "", 0]
     Imp=False
     Depot=False
@@ -167,21 +245,39 @@ def update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl,
     return Event, Vehicles, Implements, reached_info,depot_reached_info, New_task,Distancia,totalDistancia,vehicle_states
 
 def init_plot(ax, Implements, Tasks, Vehicles):
+    """
+    Initialize the visualization plot with all entities.
+    
+    Displays:
+    - Implements: Black triangles
+    - Tasks: Blue squares (available) or red squares (completed)
+      Size proportional to task area
+    - Vehicles: Red hexagons with labels
+    - Depot: Green square at origin (0,0)
+    
+    Args:
+        ax: Matplotlib axes object
+        Implements, Tasks, Vehicles: Entity position matrices
+    """
     ax.clear()
     
+    # Plot implements as black triangles
     ax.scatter(Implements[:, 0], Implements[:, 1], marker="^", s=10**2, c="black", label="Implements")
 
+    # Plot tasks with size proportional to area, color by state
     for i in range(len(Tasks)):
-        if Tasks[i, -1] == 0:
+        if Tasks[i, -1] == 0:  # Available task
             ax.scatter(Tasks[i, 0], Tasks[i, 1], c="blue", marker="s", alpha=0.3, s=Tasks[i, 2] * 20)
             ax.scatter(Tasks[i, 0], Tasks[i, 1], c="blue", marker="s", alpha=1, s=20, label="Task Available" if i == 0 else "")
-        else:
+        else:  # Completed task
             ax.scatter(Tasks[i, 0], Tasks[i, 1], c="red", marker="s", alpha=0.3, s=Tasks[i, 2] * 20 )
             ax.scatter(Tasks[i, 0], Tasks[i, 1], c="red", marker="s", alpha=1, s=20, label="Task Not Available" if i == 1 else "")
 
+    # Plot depot at origin
     ax.scatter(0, 0, marker="s", s=10**2, c="green", label="Depot", alpha=0.4)
+    
+    # Plot vehicles as red hexagons with labels
     ax.scatter(Vehicles[:, 0], Vehicles[:, 1], marker="H", s=10**2, c="red", label="Vehicles")
-
     for i in range(len(Vehicles)):
         ax.text(Vehicles[i, 0], Vehicles[i, 1], f'V{i}', fontsize=12, ha='right')
 
@@ -192,6 +288,27 @@ def init_plot(ax, Implements, Tasks, Vehicles):
 
 
 def update_plot(ax, Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles, Distancia, probabilityTA, probabilityTD, probabilityVA, probabilityVD, probabilityID, probabilityIA,totalDistancia,num_periods,Z_periodsD,vehicle_states,FinishedTasks,start_time):
+    """
+    Update the visualization for one animation frame.
+    
+    This function:
+    1. Calls update_positions to get new positions
+    2. Re-initializes the plot with updated positions
+    3. Draws arrows showing current vehicle objectives
+    
+    Arrow colors indicate vehicle state:
+    - Orange: Moving toward implement
+    - Green: Moving toward task (with implement)
+    - Red: Returning to depot
+    
+    Args:
+        ax: Matplotlib axes object
+        (other args same as update_positions)
+    
+    Returns:
+        tuple: (Event, updated_vehicles, updated_implements, reached_info,
+                depot_reached_info, New_task, totalDistancia, vehicle_states)
+    """
     ax.clear()
     
     Event, updated_vehicles, updated_implements, reached_info,depot_reached_info, New_task, Distancia,totalDistancia,vehicle_states = update_positions(Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, reached_implements, reached_tasks, Z_vehicles, Distancia, probabilityTA, probabilityTD, probabilityVA, probabilityVD, probabilityID, probabilityIA,totalDistancia,num_periods,Z_periodsD,vehicle_states,FinishedTasks,start_time)
@@ -228,6 +345,38 @@ def update_plot(ax, Vehicles, Implements, Tasks, Asignments, step_fraction, Vl, 
 
 
 def custom_animation(Implements, Tasks, Vehicles, Asignments, ZAsignments, probabilityTA, probabilityTD, probabilityVA, probabilityVD, probabilityID, probabilityIA, jota, totalDistancia, num_periods, num_steps=100):
+    """
+    Main animation controller for the D-MRTAI simulation.
+    
+    Creates an interactive matplotlib animation showing vehicles executing their
+    assigned tasks in real-time. Includes a pause button and handles events
+    that may trigger re-optimization.
+    
+    The animation runs until:
+    - All tasks are completed
+    - An event requiring re-optimization occurs
+    - User closes the window
+    
+    Args:
+        Implements, Tasks, Vehicles: Initial entity positions
+        Asignments: Task assignments from optimization (x variables)
+        ZAsignments: Depot assignments from optimization (z variables)
+        probability*: Event generation probabilities
+        jota: Animation iteration offset
+        totalDistancia: Cumulative distances per vehicle
+        num_periods: Number of planning periods
+        num_steps: Animation steps per iteration (default: 100)
+    
+    Returns:
+        tuple: (Event, Vehicles, Implements, Tasks, reached_info_all, 
+                depot_reached_info_all, execution_time, Distancia, totalDistancia)
+            - Event: Final event that stopped simulation
+            - Updated entity positions
+            - reached_info_all: List of completed task assignments with timing
+            - depot_reached_info_all: List of depot visits
+            - execution_time: Total simulation time in seconds
+            - Distance tracking arrays
+    """
     global check, paused
     start_time = time.time()
     fig, ax = plt.subplots(figsize=(10, 6))

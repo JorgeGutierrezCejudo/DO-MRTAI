@@ -1,76 +1,124 @@
+"""
+PostProcessing.py - Post-Processing Functions for D-MRTAI
+
+This module handles post-processing tasks after optimization and simulation steps.
+It updates system state based on completed assignments, calculates true costs,
+and tracks performance metrics.
+
+Key Functions:
+- UpdateInfoST: Update system state for static model (single period)
+- UpdateInfoTE: Update system state for time-extended model (multi-period)
+- TrueObj: Calculate true objective function based on actual execution
+- AssignmentDone: Process completed assignments from simulation
+- AssignmentByRobot: Organize assignments by robot for performance tracking
+
+Author: Jorge
+Date: 2024
+"""
+
 import math
 
 import numpy as np
 import Tools.Defactorise as tl
 
 def UpdateInfoST(Asignments,Implements,Tasks,Vehicles,M,That,b,ZAsignments,Tmax,Distancia):
+    """
+    Update system information for static (single-period) model after task completion.
+    
+    This function:
+    1. Marks completed tasks as unavailable (state=1)
+    2. Updates vehicle battery levels based on energy consumption
+    3. Accounts for distance-based battery drain
+    
+    Args:
+        Asignments (dict): Completed task assignments
+        Implements (np.array): Implement data matrix
+        Tasks (np.array): Task data matrix
+        Vehicles (np.array): Vehicle data matrix
+        M (np.array): Penalty vector
+        That (np.array): Current battery levels
+        b (np.array): Energy consumption matrix
+        ZAsignments (dict): Depot assignments
+        Tmax (np.array): Maximum battery capacities
+        Distancia (np.array): Distances traveled in current period
+    
+    Returns:
+        tuple: (Implements, Tasks, Vehicles, M, That) - Updated state arrays
+    """
+    # Extract assignment indices
     A_implements,A_tasks,A_vehicles =tl.XAsignmentsDefactorise(Asignments)
 
-
-    # for i in range(len(A_vehiclesd)):
-    #     That[A_vehiclesd[i]]=Tmax[A_vehiclesd[i]]
-    #     Vehicles[A_vehiclesd[i],1]=0
-    #     Vehicles[A_vehiclesd[i],0]=0
-
-#Update the position of the Implements,Tasks and Vehicles
-
-    # for i in range(len(A_tasks)):
-    #     Implements[A_implements[i],1]=Tasks[A_tasks[i],1]
-    #     Vehicles[A_vehicles[i],1]=Tasks[A_tasks[i],1]
-    #     Implements[A_implements[i],0]=Tasks[A_tasks[i],0]
-    #     Vehicles[A_vehicles[i],0]=Tasks[A_tasks[i],0
-    # for v in range(len(A_tasks)):
-    #     That[A_vehicles[v]]=That[A_vehicles[v]]-b[A_implements[v],A_tasks[v],A_vehicles[v]]
-
-#Update the state of the tasks
+    # Update task states: mark completed tasks as unavailable
     A_tasks=sorted(A_tasks,reverse=True)
     for i in range(len(A_tasks)): 
-        Tasks[A_tasks[i],4]=1
+        Tasks[A_tasks[i],4]=1  # Set state to 1 (completed/unavailable)
 
-    for i in range (len(A_vehicles)):   #Update the autonomy of the vehicles
+    # Update vehicle battery levels: subtract energy consumed during task
+    for i in range (len(A_vehicles)):
         That[A_vehicles[i]] =That[A_vehicles[i]]-b[A_implements[i],A_tasks[i],A_vehicles[i]]
         if That[i]<0:
             That[i]=0
 
+    # Additional battery drain proportional to distance traveled
     for i in range(len(Vehicles)):
         That[i]=That[i]-Distancia[i]*0.01
         if That[i]<0:
             That[i]=0
+    
+    # Update vehicle matrix with new battery levels
     Vehicles[:,4]=That
 
     return Implements,Tasks,Vehicles,M,That
 
 def UpdateInfoTE(Asignments,Implements,Tasks,Vehicles,M,That,num_periods,ZAsignments,b,Tmax,TAsignments,num_vehicles):
+    """
+    Update system information for time-extended (multi-period) model after task completion.
+    
+    More complex than static model because it handles:
+    1. Multi-period battery dynamics
+    2. Battery level tracking across periods via TAsignments
+    3. Period-specific task completion
+    
+    Args:
+        Asignments (dict): Completed task assignments with period info
+        Implements (np.array): Implement data matrix
+        Tasks (np.array): Task data matrix
+        Vehicles (np.array): Vehicle data matrix
+        M (np.array): Penalty matrix
+        That (np.array): Current battery levels
+        num_periods (int): Number of time periods
+        ZAsignments (dict): Depot assignments with period info
+        b (np.array): Energy consumption matrix [periods x I x K x V]
+        Tmax (np.array): Maximum battery capacities
+        TAsignments (dict): Battery level variables from optimization
+        num_vehicles (int): Number of vehicles
+    
+    Returns:
+        tuple: (Implements, Tasks, Vehicles, M, That) - Updated state arrays
+    """
+    # Extract assignment indices with period information
     A_implements, A_tasks, A_vehicles, A_periods = tl.TEXAsignmentsDefactorise(Asignments)
     A_vehiclesd, A_periodsD = tl.TEZAsignmentsDefactorise(ZAsignments)
 
-#Update the position of the Implements,Tasks and Vehicles
-    # for i in range(len(A_tasks)):
-    #     if A_periods[i]==max(A_periods):
-    #         Implements[A_implements[i],1]=Tasks[A_tasks[i],1]
-    #         Vehicles[A_vehicles[i],1]=Tasks[A_tasks[i],1]
-    #         Implements[A_implements[i],0]=Tasks[A_tasks[i],0]
-    #         Vehicles[A_vehicles[i],0]=Tasks[A_tasks[i],0]
-
-    # for i in range(len(A_vehiclesd)):
-    #     if A_periodsD[i]==num_periods-1:
-    #         That[A_vehiclesd[i]]=Tmax[A_vehiclesd[i]]
-    #         Vehicles[A_vehiclesd[i],1]=1
-    #         Vehicles[A_vehiclesd[i],0]=1
+    # Update battery levels using optimization solution
     try:
+        # Extract battery level matrix from optimization variables
         Tinfo=tl.TInfo(TAsignments,num_vehicles,num_periods)
+        
+        # For tasks in final period, use battery info from optimization
         for v in range(len(A_tasks)):
             if A_periods[v]==num_periods-1:
                 That[A_vehicles[v]]=Tinfo[A_vehicles[v],num_periods-1]-b[num_periods-1,A_implements[v],A_tasks[v],A_vehicles[v]]
             if That[A_vehicles[v]]<0:
                 That[A_vehicles[v]]=0
     except: 
-        for i in range (len(A_vehicles)):   #Update the autonomy of the vehicles
+        # Fallback: simple battery update if T variables not available
+        for i in range (len(A_vehicles)):
             That[A_vehicles[i]] =That[A_vehicles[i]]-b[A_implements[i],A_tasks[i],A_vehicles[i]]
             if That[A_vehicles[i]]<0:
                 That[A_vehicles[i]]=0
 
-        
+    # Mark completed tasks as unavailable
     A_tasks=sorted(A_tasks,reverse=True)
     for i in range(len(A_tasks)):
         Tasks[A_tasks[i],4]=1
@@ -81,6 +129,7 @@ def UpdateInfoTE(Asignments,Implements,Tasks,Vehicles,M,That,num_periods,ZAsignm
 
     
     
+
 
     
 

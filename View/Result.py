@@ -1,11 +1,37 @@
+"""
+Result.py - Real-time Simulation Results Visualization Window
+
+This module provides a GUI window that displays real-time simulation metrics
+and performance indicators. It reads from a JSON file that is continuously
+updated by the main simulation.
+
+Features:
+- Real-time data display (updates every 500ms)
+- Shows battery levels, distances, task completion counts
+- University logos and professional styling
+- Treeview table for organized data presentation
+
+Author: Jorge
+Date: 2024
+"""
+
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
 import json
 
-DATA_FILE = "View/simulation_data.json"
+DATA_FILE = "View/simulation_data.json"  # JSON file updated by simulation
 
 class VisualizationWindow:
+    """
+    Main visualization window for displaying simulation results.
+    
+    Continuously monitors the data file and updates the display to show:
+    - Battery levels for each vehicle
+    - Distances traveled by each vehicle
+    - Tasks completed by each robot
+    - Total metrics (distance, time, optimization time, events)
+    """
     def __init__(self, root):
         self.root = root
         self.root.title("Simulation Events Data")
@@ -82,27 +108,40 @@ class VisualizationWindow:
         self.update_data()
 
     def update_data(self):
+        """
+        Read simulation data from JSON file and update the display.
+        
+        This method runs continuously (every 500ms) to provide real-time updates.
+        It reads the JSON file, clears the table, and repopulates it with current data.
+        Silently handles file not found or JSON errors (file may not exist yet at startup).
+        """
         try:
-            # Leer los datos desde el archivo JSON
+            # Read data from JSON file
             with open(DATA_FILE, "r") as file:
                 data = json.load(file)
 
-            # Limpiar la tabla
+            # Clear the table
             for item in self.tree.get_children():
                 self.tree.delete(item)
 
-            # Llenar la tabla con los datos actuales
+            # Populate table with current data
             for row in data:
                 self.tree.insert("", "end", values=row)
 
         except (FileNotFoundError, json.JSONDecodeError):
-            pass  
+            pass  # Silently ignore if file doesn't exist yet
 
-        # Actualizar los datos cada 500 ms
+        # Schedule next update in 500 milliseconds
         self.root.after(500, self.update_data)
 
-# Crear la ventana
+# Create and run the visualization window
 def main():
+    """
+    Main function to create and run the visualization window.
+    
+    Creates the Tkinter root window, initializes the VisualizationWindow,
+    and starts the GUI event loop.
+    """
     root = tk.Tk()
     app = VisualizationWindow(root)
     root.mainloop()
