@@ -20,7 +20,6 @@ A sophisticated optimization system for dynamic multi-robot task allocation cons
 - **Battery Management**: Automatic recharging and energy tracking
 - **Real-time Visualization**: Animated simulation of vehicle movements
 - **Batch Experiments**: Support for JSON-based experiment configurations
-- **ROS Integration**: Optional integration with Robot Operating System
 
 ### Optimization Models
 - **Static Model**: Single-period task assignment (StaticModelSMC.py)
@@ -50,8 +49,6 @@ D-MRTAI/
 │   └── Result.py             # Real-time results display
 ├── Tools/
 │   └── Defactorise.py        # Solution variable extraction utilities
-└── ROS/
-    └── RealCost.py           # ROS navigation integration
 ```
 
 ## Quick Start
@@ -171,12 +168,6 @@ Contains comprehensive metrics for each experiment:
 
 ## Advanced Features
 
-### ROS Integration
-Connect to real robots for path validation:
-```python
-from ROS import RealCost as rc
-Error, UpdatedCost = rc.RealCost(Assignments, Implements, Tasks, Vehicles, CostMatrix, client)
-```
 
 ### Custom Compatibility Matrices
 Define specific implement-task and implement-vehicle compatibilities:
